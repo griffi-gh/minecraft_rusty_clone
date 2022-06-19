@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 mod world;
-mod material;
 
 fn main() {
   App::new()
