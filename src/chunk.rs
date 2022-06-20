@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use crate::mesh_builder::{MeshBuilder, Face};
 
-const CHUNK_SIZE_H: usize = 16;
-const CHUNK_SIZE_V: usize = 256;
+pub const CHUNK_SIZE_H: usize = 16;
+pub const CHUNK_SIZE_V: usize = 256;
 
 const CHUNK_MAX_H: usize = CHUNK_SIZE_H - 1;
 const CHUNK_MAX_V: usize = CHUNK_SIZE_V - 1;
@@ -26,9 +26,10 @@ impl Chunk {
       x, y
     }
   }
+
   pub fn test(mut self) -> Self {
     for x in 0..CHUNK_SIZE_H {
-      for y in 0..2_usize {
+      for y in 0..40_usize {
         for z in 0..CHUNK_SIZE_H {
           self.blocks[x][y][z] = 1;
         }
@@ -36,6 +37,7 @@ impl Chunk {
     }
     self
   }
+
   pub fn build_mesh(&self, surrounding_chunks: Option<[&Chunk; 8]>) -> Mesh {
     //surrounding_chunks: 
     //  0 

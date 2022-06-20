@@ -1,15 +1,6 @@
 use bevy::prelude::*;
 use bevy::render::mesh::{PrimitiveTopology, Indices};
 
-#[derive(Default)]
-pub struct MeshBuilder {
-  vertices: Vec<[f32; 3]>,
-  normals: Vec<[f32; 3]>,
-  uvs: Vec<[f32; 2]>,
-  indices: Vec<u32>,
-  faces: u32
-}
-
 #[repr(usize)]
 #[derive(Clone, Copy)]
 pub enum Face {
@@ -39,6 +30,15 @@ pub const FACE_NORMALS: [[f32; 3]; 6] = [
 ];
 pub const TRIANGLES: [u32; 6] = [0, 1, 2, 2, 1, 3];
 
+
+#[derive(Default)]
+pub struct MeshBuilder {
+  vertices: Vec<[f32; 3]>,
+  normals: Vec<[f32; 3]>,
+  uvs: Vec<[f32; 2]>,
+  indices: Vec<u32>,
+  faces: u32
+}
 impl MeshBuilder {
   pub fn add_face(&mut self, face: Face, coord: [u8; 3], uvs: [[f32; 2]; 4]) {
     //Get face index from Face
