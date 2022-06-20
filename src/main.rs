@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-mod world;
 mod player;
 
 fn test_scene(
@@ -33,6 +32,12 @@ fn test_scene(
 fn main() {
   App::new()
     .add_plugins(DefaultPlugins)
+    .insert_resource(WindowDescriptor {
+      title: "Minecraft clone".into(),
+      ..default()
+    })
+    .add_system(bevy::input::system::exit_on_esc_system)
     .add_startup_system(test_scene)
+    .add_plugin(player::FirstPersonController)
     .run();
 }
