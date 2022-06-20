@@ -1,5 +1,10 @@
 use bevy::prelude::*;
+
 mod player;
+use player::FirstPersonController;
+
+
+mod mesh_builder;
 
 fn test_scene(
   mut commands: Commands,
@@ -38,6 +43,6 @@ fn main() {
     })
     .add_system(bevy::input::system::exit_on_esc_system)
     .add_startup_system(test_scene)
-    .add_plugin(player::FirstPersonController)
+    .add_plugin(FirstPersonController)
     .run();
 }
