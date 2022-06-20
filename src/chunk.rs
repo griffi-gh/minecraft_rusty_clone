@@ -16,23 +16,38 @@ const UV: [[f32; 2]; 4] = [
 
 pub struct Chunk {
   blocks: [[[u32; CHUNK_SIZE_H]; CHUNK_SIZE_V]; CHUNK_SIZE_H],
-  x: usize, y: usize
+  x: isize, y: isize
 }
 
-
-//surrounding_chunks: 
-//  0 
-//1   2 → +x
-//  3 
-//  ↓
-//  +z
-const NEG_Z: usize = 0;
-const NEG_X: usize = 1;
-const POS_X: usize = 2;
-const POS_Z: usize = 3;
-
 impl Chunk {
+  pub fn new(x: isize, y: isize) -> Self {
+    Self {
+      blocks: [[[0; CHUNK_SIZE_H]; CHUNK_SIZE_V]; CHUNK_SIZE_H],
+      x, y
+    }
+  }
+  pub fn test(mut self) -> Self {
+    for x in 0..CHUNK_SIZE_H {
+      for y in 0..2_usize {
+        for z in 0..CHUNK_SIZE_H {
+          self.blocks[x][y][z] = 1;
+        }
+      }
+    }
+    self
+  }
   pub fn build_mesh(&self, surrounding_chunks: Option<[&Chunk; 8]>) -> Mesh {
+    //surrounding_chunks: 
+    //  0 
+    //1   2 → +x
+    //  3 
+    //  ↓
+    //  +z
+    const NEG_Z: usize = 0;
+    const NEG_X: usize = 1;
+    const POS_X: usize = 2;
+    const POS_Z: usize = 3;
+
     let mut builder = MeshBuilder::default();
     for x in 0..CHUNK_SIZE_H {
       for y in 0..CHUNK_SIZE_V {
