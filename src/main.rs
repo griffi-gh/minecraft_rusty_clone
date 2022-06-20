@@ -1,10 +1,13 @@
 use bevy::prelude::*;
 
+pub(crate) mod mesh_builder;
+
+mod chunk;
+
 mod player;
 use player::FirstPersonController;
 
 
-mod mesh_builder;
 
 fn test_scene(
   mut commands: Commands,

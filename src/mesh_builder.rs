@@ -73,7 +73,13 @@ impl MeshBuilder {
     self.faces += 1;
   }
 
-  pub fn build(self)->Mesh{
+  pub fn add_face_if(&mut self, condition: bool, face: Face, coord: [u8; 3], uvs: [[f32; 2]; 4]) {
+    if condition {
+      self.add_face(face, coord, uvs)
+    }
+  }
+
+  pub fn build(self) -> Mesh{
     let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, self.vertices);
     mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, self.normals);
