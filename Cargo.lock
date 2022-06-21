@@ -2764,6 +2764,7 @@ dependencies = [
  "bevy",
  "bevy_eventwork",
  "serde",
+ "shared",
 ]
 
 [[package]]
