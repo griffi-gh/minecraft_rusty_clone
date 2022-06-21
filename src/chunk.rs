@@ -38,7 +38,7 @@ impl Chunk {
     self
   }
 
-  pub fn build_mesh(&self, surrounding_chunks: Option<[&Chunk; 8]>) -> Mesh {
+  pub fn build_mesh(&self, surrounding_chunks: Option<[&Chunk; 4]>) -> Mesh {
     //surrounding_chunks: 
     //  0 
     //1   2 → +x

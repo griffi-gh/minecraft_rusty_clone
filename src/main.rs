@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 
 pub(crate) mod mesh_builder;
-mod chunk;
-mod player;
+pub(crate) mod world;
+pub(crate) mod chunk;
+pub(crate) mod player;
 
 use player::FirstPersonController;
 
