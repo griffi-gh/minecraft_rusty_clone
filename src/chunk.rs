@@ -14,6 +14,7 @@ const UV: [[f32; 2]; 4] = [
   [1.0, 1.0]
 ];
 
+#[derive(Component)]
 pub struct Chunk {
   blocks: [[[u32; CHUNK_SIZE_H]; CHUNK_SIZE_V]; CHUNK_SIZE_H],
   x: isize, y: isize

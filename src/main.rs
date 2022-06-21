@@ -5,7 +5,8 @@ pub(crate) mod world;
 pub(crate) mod chunk;
 pub(crate) mod player;
 
-use player::FirstPersonController;
+use player::FirstPersonControllerPlugin;
+use world::WorldPlugin;
 
 fn test_scene(
   mut commands: Commands,
@@ -30,14 +31,18 @@ fn test_scene(
 
 fn main() {
   App::new()
-    .add_plugins(DefaultPlugins)
+    //=====================
     .insert_resource(WindowDescriptor {
       title: "Minecraft clone".into(),
       ..default()
     })
+    .add_plugins(DefaultPlugins)
     .add_system(bevy::input::system::exit_on_esc_system)
-    .add_startup_system(test_scene)
-    .add_plugin(FirstPersonController)
     .add_plugin(bevy::pbr::wireframe::WireframePlugin)
+    //=====================
+    .add_startup_system(test_scene)
+    .add_plugin(FirstPersonControllerPlugin)
+    .add_plugin(WorldPlugin)
+    //=====================
     .run();
 }
