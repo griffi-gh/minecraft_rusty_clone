@@ -27,7 +27,9 @@ fn main() {
     bevy::tasks::TaskPool,
   >::default());
   register_messages_server(&mut app);
+  
   app.add_startup_system(setup_networking);
+  app.add_system(handle_network_events);
 
   app.run();
 }
