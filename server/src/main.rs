@@ -59,6 +59,7 @@ fn setup_networking(
 fn handle_network_events(
   mut commands: Commands,
   mut network_events: EventReader<NetworkEvent>,
+  players: Query<(Entity, &Player)>
   //network: Res<Network<TcpProvider>>,
 ) {
   for event in network_events.iter() {
@@ -67,7 +68,20 @@ fn handle_network_events(
         commands.spawn_bundle((Player(*conn_id),));
         info!("New player connected: {}", conn_id);
       }
-      _ => {}
+      NetworkEvent::Disconnected(conn_id) => {
+        info!("Someone is leaving...");
+        for (entity, player) in players.iter() {
+          if player.0 == *conn_id {
+            commands.entity(entity).despawn();
+            break;
+          }
+        }
+        info!("Player disconnected: {}", conn_id);
+      }
+      NetworkEvent::Error(err) => {
+        error!("Network error: {}", err);
+        panic!();
+      }
     }
   }
 }
