@@ -2,13 +2,18 @@ use bevy::prelude::*;
 use bevy_eventwork::{
   EventworkPlugin, Network,
   ConnectionId, NetworkEvent,
+  NetworkData,
   tcp::{TcpProvider, NetworkSettings}, 
 };
 use std::{
   net::{SocketAddr, IpAddr, Ipv4Addr}, 
   ops::Deref
 };
-use shared::networking::register_messages_server;
+use shared::{
+  networking::register_messages_server,
+  networking::{ChunkDataRequestMessage, ChunkDataMessage},
+  types::ChunkData,
+};
 
 #[derive(Component)]
 struct Player(ConnectionId);
@@ -30,6 +35,7 @@ fn main() {
   
   app.add_startup_system(setup_networking);
   app.add_system(handle_network_events);
+  app.add_system(handle_messages);
 
   app.run();
 }
@@ -85,5 +91,20 @@ fn handle_network_events(
         panic!();
       }
     }
+  }
+}
+
+fn handle_messages(
+  mut new_messages: EventReader<NetworkData<ChunkDataRequestMessage>>,
+  net: Res<Network<TcpProvider>>,
+) {
+  for message in new_messages.iter() {
+    let user = message.source();
+    info!("User \"{}\" requested chunk at ({}, {})", user, message.x, message.y);
+    net.broadcast(ChunkDataMessage {
+      data: ChunkData::new_test().into(),
+      x: message.x,
+      y: message.y
+    });
   }
 }

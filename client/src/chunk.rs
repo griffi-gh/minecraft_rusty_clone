@@ -4,8 +4,8 @@ use shared::{
   types::{Block, ChunkData}
 };
 
-#[derive(Component)]
-struct Chunk(ChunkData);
+#[derive(Component, Clone)]
+pub struct Chunk(pub ChunkData);
 
-#[derive(Component)]
-struct ChunkPosition(i64, i64);
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ChunkPosition(pub i64, pub i64);

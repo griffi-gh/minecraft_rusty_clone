@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+compress = "0.2"
 bevy = { version = "0.7", default-features = false }
 bevy_eventwork = "0.7"
 serde = { version = "1.0", features = ["derive"] }
 serde_with = "1.14"
+bincode = "1.3"
