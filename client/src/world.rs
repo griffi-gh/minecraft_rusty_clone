@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::tasks::{Task, AsyncComputeTaskPool};
 use crate::{
   chunk::{Chunk, ChunkPosition},
   mesh_builder::{MeshBuilder, Face}
@@ -8,14 +9,21 @@ use shared::{
   consts::{CHUNK_HEIGHT, CHUNK_SIZE}
 };
 
-#[derive(Component, Clone, Copy, Debug, Default)]
-pub struct HasMesh;
+#[derive(Debug)]
+pub enum MeshStage {
+  Queued(Task<Mesh>),
+  Ready
+}
+
+#[derive(Component, Debug)]
+pub struct MeshStageComponent(MeshStage);
 
 fn mesh_gen_system(
   mut commands: Commands,
   mut meshes: ResMut<Assets<Mesh>>,
   mut materials: ResMut<Assets<StandardMaterial>>,
-  chunks: Query<(Entity, &Chunk, &ChunkPosition), Without<HasMesh>>
+  chunks: Query<(Entity, &Chunk, &ChunkPosition), Without<MeshStageComponent>>,
+  //pool: Res<AsyncComputeTaskPool>
 ) {
   for (entity, chunk, position) in chunks.iter() {
     info!("Building chunk mesh for chunk: \"{:?}\"...", position);
@@ -62,7 +70,7 @@ fn mesh_gen_system(
       }
     }
     commands.entity(entity)
-      .insert(HasMesh)
+      .insert(MeshStageComponent(MeshStage::Ready))
       .insert_bundle(PbrBundle {
         mesh: meshes.add(builder.build()),
         transform: Transform::from_translation(Vec3::new(
@@ -80,6 +88,18 @@ fn mesh_gen_system(
       .insert(bevy::pbr::wireframe::Wireframe);
   }
 }
+
+fn apply_mesh_gen_tasks(
+  mut commands: Commands,
+  mut query: Query<(Entity, &mut MeshStageComponent), With<Chunk>>,
+) {
+
+}
+
+/*struct WorldMap {
+  //TODO WorldMap
+  map: HashMap<ChunkPosition, String>
+}*/
 
 pub struct WorldPlugin;
 impl Plugin for WorldPlugin {

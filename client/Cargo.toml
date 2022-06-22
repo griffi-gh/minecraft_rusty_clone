@@ -9,6 +9,7 @@ bevy = "0.7"
 bevy_flycam = "0.7"
 bevy_eventwork = "0.7"
 serde = { version = "1.0", features = ["derive"] }
+futures-lite = "1.12"
 
 [features]
 default = ["fast-compile"]

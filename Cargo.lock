@@ -1033,6 +1033,7 @@ dependencies = [
  "bevy",
  "bevy_eventwork",
  "bevy_flycam",
+ "futures-lite",
  "serde",
  "shared",
 ]

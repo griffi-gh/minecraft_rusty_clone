@@ -11,8 +11,7 @@ use std::{
 };
 use shared::{
   networking::register_messages_server,
-  networking::{ChunkDataRequestMessage, ChunkDataMessage},
-  types::ChunkData,
+  networking::{ChunkDataRequestMessage, ChunkDataMessage}
 };
 
 mod worldgen;

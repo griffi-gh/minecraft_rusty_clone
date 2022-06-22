@@ -1,8 +1,9 @@
 use bevy::prelude::*;
-use shared::{
+use shared::types::ChunkData;
+/*use shared::{
   consts::{CHUNK_SIZE, CHUNK_HEIGHT},
   types::{Block, ChunkData}
-};
+};*/
 
 #[derive(Component, Clone)]
 pub struct Chunk(pub ChunkData);

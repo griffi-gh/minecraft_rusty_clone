@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::tasks::{Task, AsyncComputeTaskPool};
 use bevy_eventwork::{
   Network, ConnectionId,
   NetworkEvent, NetworkData, 
@@ -14,12 +15,9 @@ use shared::{
     ChunkDataMessage, 
     ChunkDataRequestMessage,
     register_messages_client
-  },
-  types::{
-    ChunkData,
-    CompressedChunkData
   }
 };
+use futures_lite::future;
 use crate::chunk::{Chunk, ChunkPosition};
 
 #[derive(Default)]
@@ -56,8 +54,8 @@ pub fn handle_network_events(
       NetworkEvent::Connected(_) => {
         info!("Connected!");
         ev_connect.send_default();
-        for x in 0..8 {
-          for y in 0..8 {
+        for x in 0..4 {
+          for y in 0..4 {
             ev_reqest.send(RequestChunk(x, y));
           }
         }
@@ -73,26 +71,45 @@ pub fn handle_network_events(
   }
 }
 
-pub fn handle_incoming_chunks(
+#[derive(Component)]
+pub struct DecompressTask(Task<Chunk>);
+
+pub fn handle_incoming_chunks (
   mut commands: Commands,
   mut new_messages: EventReader<NetworkData<ChunkDataMessage>>,
-  chunks: Query<(Entity, &ChunkPosition), With<Chunk>>
+  pool: Res<AsyncComputeTaskPool>
 ) {
   for new_message in new_messages.iter() {
     let new_pos = ChunkPosition(new_message.x, new_message.y);
     info!("Received chunk: {:?}", new_pos);
-    info!("Decompressing...");
-    let data: ChunkData = (&new_message.data).into();
-    let chunk = Chunk(data);
-    info!("Adding...");
-    for (entity, position) in chunks.iter() {
-      if *position == new_pos {
-        commands.entity(entity).despawn();
-      }
-    }
-    commands.spawn().insert(chunk).insert(new_pos);
-    info!("Done");
+    info!("Starting async task");
+
+    let data = new_message.data.clone();
+
+    let task = pool.spawn(async move {
+      info!("Decompressing chunk {:?}...", new_pos);
+      Chunk((data).into())
+    });
+
+    commands.spawn()
+      .insert(new_pos)
+      .insert(DecompressTask(task));
   }
+}
+
+pub fn apply_decompress_tasks(
+  mut commands: Commands,
+  mut query: Query<(Entity, &mut DecompressTask), With<ChunkPosition>>,
+) {
+  //TODO: Update instead of duplicating!
+  query.for_each_mut(|(entity, mut task)| {
+    if let Some(chunk) = future::block_on(future::poll_once(&mut task.0)) {
+      commands.entity(entity)
+        .remove::<DecompressTask>()
+        .insert(chunk);
+      info!("Chunk ready");
+    }
+  });
 }
 
 pub fn request_chunks(
@@ -137,6 +154,7 @@ impl Plugin for NetworkingPlugin {
       handle_network_events
         .chain(request_chunks)
         .chain(handle_incoming_chunks)
+        .chain(apply_decompress_tasks)
     );
   }
 }

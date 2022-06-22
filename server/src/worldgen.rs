@@ -1,6 +1,6 @@
 use shared::{
   types::{ChunkData, Block},
-  consts::{CHUNK_HEIGHT, CHUNK_SIZE}
+  consts::CHUNK_SIZE
 };
 use noise::{Fbm, NoiseFn};
 
