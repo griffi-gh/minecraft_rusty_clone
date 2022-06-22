@@ -105,6 +105,8 @@ fn apply_mesh_gen_tasks(
       //Update MeshStage and remove MeshTask
       ecmd.remove::<MeshTask>();
       *stage = MeshStage::Ready;
+      //Debug
+      info!("Finish building mesh");
     }
   }
 }
