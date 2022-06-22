@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 use bevy_eventwork::{AppNetworkMessage, NetworkMessage, tcp::TcpProvider};
 use serde::{Deserialize, Serialize};
-use compress::rle;
-use std::io::{Write, Read};
-use crate::types::ChunkData;
+use crate::types::CompressedChunkData;
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct ChunkDataRequestMessage {
@@ -12,25 +10,6 @@ pub struct ChunkDataRequestMessage {
 }
 impl NetworkMessage for ChunkDataRequestMessage {
   const NAME: &'static str = "ReqChunk";
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct CompressedChunkData(pub Vec<u8>);
-impl From<ChunkData> for CompressedChunkData {
-  fn from(chunk_data: ChunkData) -> Self {
-    let data = bincode::serialize(&chunk_data).unwrap();
-    let mut encoder = rle::Encoder::new(Vec::new());
-    encoder.write_all(&data[..]).unwrap();
-    drop(data);
-    Self(encoder.finish().0)
-  }
-}
-impl Into<ChunkData> for CompressedChunkData {
-  fn into(self) -> ChunkData {
-    let mut decoder_buf = Vec::new();
-    rle::Decoder::new(&self.0[..]).read_to_end(&mut decoder_buf).unwrap();
-    bincode::deserialize(&decoder_buf[..]).unwrap()
-  }
 }
 
 #[derive(Serialize, Deserialize, Clone)]

@@ -15,6 +15,9 @@ use shared::{
   types::ChunkData,
 };
 
+mod worldgen;
+use worldgen::generate as generate_chunk;
+
 #[derive(Component)]
 struct Player(ConnectionId);
 
@@ -102,7 +105,7 @@ fn handle_messages(
     let user = message.source();
     info!("User \"{}\" requested chunk at ({}, {})", user, message.x, message.y);
     net.broadcast(ChunkDataMessage {
-      data: ChunkData::new_test().into(),
+      data: generate_chunk(message.x, message.y).into(),
       x: message.x,
       y: message.y
     });

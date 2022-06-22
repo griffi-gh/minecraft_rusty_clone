@@ -19,6 +19,8 @@ use crate::chunk::{Chunk, ChunkPosition};
 #[derive(Default)]
 pub struct ConnectSuccess;
 
+pub struct RequestChunk(i64, i64);
+
 pub fn connect(
   network: ResMut<Network<TcpProvider>>,
   settings: Res<NetworkSettings>,
@@ -37,11 +39,10 @@ pub fn connect(
   }
 }
 
-
-
 pub fn handle_network_events(
   mut new_network_events: EventReader<NetworkEvent>,
-  mut ev_connect: EventWriter<ConnectSuccess>
+  mut ev_connect: EventWriter<ConnectSuccess>,
+  mut ev_reqest: EventWriter<RequestChunk>
 ) {
   for event in new_network_events.iter() {
     info!("Received event");
@@ -49,6 +50,11 @@ pub fn handle_network_events(
       NetworkEvent::Connected(_) => {
         info!("Connected!");
         ev_connect.send_default();
+        for x in 0..3 {
+          for y in 0..3 {
+            ev_reqest.send(RequestChunk(x, y));
+          }
+        }
       }
       NetworkEvent::Disconnected(_) => {
         info!("Disconnected!");
@@ -68,7 +74,8 @@ pub fn handle_incoming_chunks(
 ) {
   for new_message in new_messages.iter() {
     let new_pos = ChunkPosition(new_message.x, new_message.y);
-    println!("Received chunk: {:?}", new_pos);
+    info!("Received chunk: {:?}", new_pos);
+    info!("Decompressing...");
     let chunk = Chunk(new_message.data.clone().into());
     for (entity, position) in chunks.iter() {
       if *position == new_pos {
@@ -79,17 +86,18 @@ pub fn handle_incoming_chunks(
   }
 }
 
-pub fn test_request_chunk_at_0_0(
+pub fn request_chunks(
   network: Res<Network<TcpProvider>>,
-  mut ev_connect: EventReader<ConnectSuccess>,
+  mut events: EventReader<RequestChunk>,
 ) {
-  for _ in ev_connect.iter() {
+  for RequestChunk(x, y) in events.iter() {
     assert!(network.has_connections(), "Not connected yet");
     info!("Received connection event, requesting chunk");
     match network.send_message(
       ConnectionId { id: 0 },
       ChunkDataRequestMessage {
-        x: 0, y: 0
+        x: *x,
+        y: *y
       },
     ) {
       Err(error) => {
@@ -111,11 +119,15 @@ impl Plugin for NetworkingPlugin {
     >::default());
     register_messages_client(app);
 
-    app.add_startup_system(connect);
     app.add_event::<ConnectSuccess>();
+    app.add_event::<RequestChunk>();
 
-    app.add_system(test_request_chunk_at_0_0);
-    app.add_system(handle_network_events);
-    app.add_system(handle_incoming_chunks);
+    app.add_startup_system(connect);
+
+    app.add_system(
+      handle_network_events
+        .chain(request_chunks)
+        .chain(handle_incoming_chunks)
+    );
   }
 }

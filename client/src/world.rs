@@ -65,13 +65,19 @@ fn mesh_gen_system(
       .insert(HasMesh)
       .insert_bundle(PbrBundle {
         mesh: meshes.add(builder.build()),
+        transform: Transform::from_translation(Vec3::new(
+          (position.0 * CHUNK_SIZE as i64) as f32, 
+          0.0, 
+          (position.1 * CHUNK_SIZE as i64) as f32
+        )),
         material: materials.add(StandardMaterial {
           base_color: Color::rgb_u8(128, 255, 128),
           unlit: true,
           ..default()
         }),
         ..default()
-      });
+      })
+      .insert(bevy::pbr::wireframe::Wireframe);
   }
 }
 
