@@ -9,10 +9,16 @@ use std::{
   net::{Ipv4Addr, IpAddr, SocketAddr},
   ops::Deref
 };
-use shared::networking::{
-  ChunkDataMessage, 
-  ChunkDataRequestMessage,
-  register_messages_client
+use shared::{
+  networking::{
+    ChunkDataMessage, 
+    ChunkDataRequestMessage,
+    register_messages_client
+  },
+  types::{
+    ChunkData,
+    CompressedChunkData
+  }
 };
 use crate::chunk::{Chunk, ChunkPosition};
 
@@ -50,8 +56,8 @@ pub fn handle_network_events(
       NetworkEvent::Connected(_) => {
         info!("Connected!");
         ev_connect.send_default();
-        for x in 0..3 {
-          for y in 0..3 {
+        for x in 0..8 {
+          for y in 0..8 {
             ev_reqest.send(RequestChunk(x, y));
           }
         }
@@ -76,13 +82,16 @@ pub fn handle_incoming_chunks(
     let new_pos = ChunkPosition(new_message.x, new_message.y);
     info!("Received chunk: {:?}", new_pos);
     info!("Decompressing...");
-    let chunk = Chunk(new_message.data.clone().into());
+    let data: ChunkData = (&new_message.data).into();
+    let chunk = Chunk(data);
+    info!("Adding...");
     for (entity, position) in chunks.iter() {
       if *position == new_pos {
         commands.entity(entity).despawn();
       }
     }
     commands.spawn().insert(chunk).insert(new_pos);
+    info!("Done");
   }
 }
 

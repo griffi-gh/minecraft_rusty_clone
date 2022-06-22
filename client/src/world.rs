@@ -71,7 +71,7 @@ fn mesh_gen_system(
           (position.1 * CHUNK_SIZE as i64) as f32
         )),
         material: materials.add(StandardMaterial {
-          base_color: Color::rgb_u8(128, 255, 128),
+          base_color: Color::rgb_u8(64, 128, 64),
           unlit: true,
           ..default()
         }),

@@ -8,6 +8,7 @@ shared = { path = "../shared" }
 bevy = { version = "0.7", default-features = false }
 bevy_eventwork = "0.7"
 serde = { version = "1.0", features = ["derive"] }
+noise = "0.7"
 
 [features]
 default = ["fast-compile"]

@@ -38,8 +38,8 @@ impl ChunkData {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct CompressedChunkData(pub Vec<u8>);
-impl From<ChunkData> for CompressedChunkData {
-  fn from(chunk_data: ChunkData) -> Self {
+impl From<&ChunkData> for CompressedChunkData {
+  fn from(chunk_data: &ChunkData) -> Self {
     let data = bincode::serialize(&chunk_data).unwrap();
     let mut encoder = rle::Encoder::new(Vec::new());
     encoder.write_all(&data[..]).unwrap();
@@ -47,12 +47,22 @@ impl From<ChunkData> for CompressedChunkData {
     Self(encoder.finish().0)
   }
 }
-impl Into<ChunkData> for CompressedChunkData {
+impl Into<ChunkData> for &CompressedChunkData {
   fn into(self) -> ChunkData {
     let mut decoder_buffer = Vec::new();
-    let compressed_data = self.0.to_owned();
-    rle::Decoder::new(&compressed_data[..])
+    let compressed_data = &self.0[..];
+    rle::Decoder::new(compressed_data)
       .read_to_end(&mut decoder_buffer).unwrap();
     bincode::deserialize(&decoder_buffer[..]).unwrap()
+  }
+}
+impl From<ChunkData> for CompressedChunkData {
+  fn from(chunk_data: ChunkData) -> Self {
+    (&chunk_data).into()
+  }
+}
+impl Into<ChunkData> for CompressedChunkData {
+  fn into(self) -> ChunkData {
+    (&self).into()
   }
 }
