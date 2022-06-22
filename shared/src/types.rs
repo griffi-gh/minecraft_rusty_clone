@@ -2,9 +2,9 @@ use crate::consts::{CHUNK_HEIGHT, CHUNK_SIZE};
 use serde::{Serialize, Deserialize};
 use serde_with::serde_as;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Block {
-  block_type: u16
+  pub block_type: u16
 }
 
 #[serde_as]
