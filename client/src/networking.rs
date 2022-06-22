@@ -20,6 +20,10 @@ use shared::{
 use futures_lite::future;
 use crate::chunk::{Chunk, ChunkPosition};
 
+
+const SPAWN_AREA_SIZE: i64 = 8;
+
+
 #[derive(Default)]
 pub struct ConnectSuccess;
 
@@ -54,8 +58,8 @@ pub fn handle_network_events(
       NetworkEvent::Connected(_) => {
         info!("Connected!");
         ev_connect.send_default();
-        for x in 0..4 {
-          for y in 0..4 {
+        for x in 0..SPAWN_AREA_SIZE {
+          for y in 0..SPAWN_AREA_SIZE {
             ev_reqest.send(RequestChunk(x, y));
           }
         }

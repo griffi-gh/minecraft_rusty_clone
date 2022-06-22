@@ -10,6 +10,10 @@ use shared::{
 };
 use futures_lite::future;
 
+
+const MAX_STARTED_MESH_BUILD_TASKS_PER_TICK: usize = 10;
+
+
 #[derive(Component, Debug)]
 #[non_exhaustive]
 pub enum MeshStage {
@@ -25,7 +29,7 @@ fn mesh_gen_system(
   chunks: Query<(Entity, &Chunk, &ChunkPosition), Without<MeshStage>>,
   pool: Res<AsyncComputeTaskPool>
 ) {
-  for (entity, chunk, position) in chunks.iter() {
+  for (entity, chunk, position) in chunks.iter().take(MAX_STARTED_MESH_BUILD_TASKS_PER_TICK) {
     info!("Starting mesh build task for chunk: \"{:?}\"...", position);
     let blocks = chunk.0.0.clone();
     let task = pool.spawn(async move {
