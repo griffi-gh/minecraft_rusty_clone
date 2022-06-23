@@ -11,6 +11,7 @@ use std::{
   ops::Deref
 };
 use shared::{
+  consts::PORT,
   networking::{
     ChunkDataMessage, 
     ChunkDataRequestMessage,
@@ -40,7 +41,7 @@ pub fn connect(
   } else {
     info!("Connecting...");
     network.connect(
-      SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
+      SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), PORT),
       task_pool.deref(),
       &settings,
     );
@@ -57,6 +58,7 @@ pub fn handle_network_events(
     match event {
       NetworkEvent::Connected(_) => {
         info!("Connected!");
+        info!("Spawn area size {0}x{0}; fetching chunks", SPAWN_AREA_SIZE);
         ev_connect.send_default();
         for x in 0..SPAWN_AREA_SIZE {
           for y in 0..SPAWN_AREA_SIZE {
@@ -122,7 +124,7 @@ pub fn request_chunks(
 ) {
   for RequestChunk(x, y) in events.iter() {
     assert!(network.has_connections(), "Not connected yet");
-    info!("Received connection event, requesting chunk");
+    info!("Reqesting chunk at coords: {},{}", x, y);
     match network.send_message(
       ConnectionId { id: 0 },
       ChunkDataRequestMessage {

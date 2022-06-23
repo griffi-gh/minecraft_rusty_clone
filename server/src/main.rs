@@ -10,8 +10,12 @@ use std::{
   ops::Deref
 };
 use shared::{
-  networking::register_messages_server,
-  networking::{ChunkDataRequestMessage, ChunkDataMessage}
+  consts::PORT,
+  networking::{
+    register_messages_server,
+    ChunkDataRequestMessage,
+    ChunkDataMessage
+  }
 };
 
 mod worldgen;
@@ -47,23 +51,21 @@ fn setup_networking(
   settings: Res<NetworkSettings>,
   runtime: Res<bevy::tasks::TaskPool>,
 ) {
-  let ip_address: IpAddr = "127.0.0.1".parse().expect("Could not parse ip address");
-
-  info!("Address of the server: {}", ip_address);
-
+  let ip_address: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
+  info!("Server address: {}:{}", ip_address, PORT);
   match net.listen(
-    SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
+    SocketAddr::new(ip_address, PORT),
     runtime.deref(),
     &settings,
   ) {
-    Ok(_) => (),
+    Ok(_) => {
+      info!("Started listening for new connections!");
+    },
     Err(err) => {
       error!("Could not start listening: {}", err);
       panic!();
     }
   }
-
-  info!("Started listening for new connections!");
 }
 
 fn handle_network_events(

@@ -3,6 +3,7 @@ use serde::{Serialize, Deserialize};
 use serde_with::serde_as;
 use compress::rle;
 use std::io::{Write, Read};
+use std::time::SystemTime;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Block {
@@ -64,5 +65,33 @@ impl From<ChunkData> for CompressedChunkData {
 impl Into<ChunkData> for CompressedChunkData {
   fn into(self) -> ChunkData {
     (&self).into()
+  }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UserChatMessage(String);
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ChatMessage {
+  pub message: String,
+  pub from: String,
+  pub timestamp: SystemTime,
+  pub is_system: bool,
+}
+impl ChatMessage {
+  pub fn new(message: String, from: String) -> Self {
+    ChatMessage {
+      message, from,
+      timestamp: SystemTime::now(),
+      is_system: false
+    }
+  }
+  pub fn system_message(message: String) -> Self {
+    ChatMessage {
+      message,
+      from: "[SYSTEM]".into(),
+      timestamp: SystemTime::now(),
+      is_system: true
+    }
   }
 }
