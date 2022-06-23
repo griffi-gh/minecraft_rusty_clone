@@ -25,7 +25,7 @@ fn main() {
 
   app.add_plugin(NetworkingPlugin);
   app.add_plugin(WorldPlugin);
-
+  
   app.add_plugin(PlayerPlugin);
 
   app.run();

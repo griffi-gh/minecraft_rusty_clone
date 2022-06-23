@@ -123,8 +123,7 @@ fn apply_mesh_gen_tasks(
 pub struct WorldPlugin;
 impl Plugin for WorldPlugin {
   fn build(&self, app: &mut App) {
-    app.add_system(
-      mesh_gen_system.chain(apply_mesh_gen_tasks)
-    );
+    app.add_system(mesh_gen_system);
+    app.add_system(apply_mesh_gen_tasks);
   }
 }

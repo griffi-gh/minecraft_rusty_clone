@@ -100,11 +100,16 @@ impl ChatMessage {
 pub struct AuthData {
   pub protocol_version: u16,
   pub name: String,
+  pub password: Option<String>
   //TODO add more stuff
 }
 impl AuthData {
   pub fn from_name(name: String) -> Self {
-    Self { name, protocol_version: PROTOCOL_VERSION }
+    Self {
+      name,
+      protocol_version: PROTOCOL_VERSION,
+      password: None
+    }
   }
 }
 

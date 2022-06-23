@@ -82,15 +82,12 @@ fn handle_disconnect_event(
 #[derive(Default, Debug)]
 pub struct AuthenticatedPlayerMap(HashSet<ConnectionId>);
 
-pub struct ServerPassword(Option<String>);
-
+//Resource
 pub struct AuthPlugin;
 impl Plugin for AuthPlugin {
   fn build(&self, app: &mut App) {
     app.insert_resource(AuthenticatedPlayerMap::default());
-    app.add_system(
-      handle_auth_request_messages
-        .chain(handle_disconnect_event)
-    );
+    app.add_system(handle_auth_request_messages);
+    app.add_system(handle_disconnect_event);
   }
 }
