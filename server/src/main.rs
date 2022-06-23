@@ -14,9 +14,12 @@ use shared::{
   networking::{
     register_messages_server,
     ChunkDataRequestMessage,
-    ChunkDataMessage, AuthMessage, AuthResultMessage
-  }, types::AuthResult
+    ChunkDataMessage
+  }
 };
+
+mod auth;
+use auth::AuthPlugin;
 
 mod worldgen;
 use worldgen::generate as generate_chunk;
@@ -48,8 +51,8 @@ fn main() {
   app.add_startup_system(setup_networking);
   app.add_system(handle_network_events);
 
+  app.add_plugin(AuthPlugin);
   app.add_system(handle_chunk_request_messages);
-  app.add_system(handle_auth_request_messages);
   app.add_system(handle_chat_messages);
 
   app.run();
@@ -140,38 +143,6 @@ fn handle_chunk_request_messages(
       x: message.x,
       y: message.y
     }).map_err(|e| error!("{}", e));
-  }
-}
-
-
-fn handle_auth_request_messages(
-  mut commands: Commands,
-  mut auth_requests: EventReader<NetworkData<AuthMessage>>,
-  network: Res<Network<TcpProvider>>,
-  players: Query<(Entity, &Player), Without<AuthenticatedPlayer>>
-) {
-  for message in auth_requests.iter() {
-    //TODO send "Player connected" chat message
-
-    let user = message.source();
-    
-    let mut auth_result = AuthResult::Error("Already connected".into());
-
-    for (entity, player) in players.iter() {
-      if player.0 == *user {
-        auth_result = AuthResult::Ok();
-        commands.entity(entity)
-          .insert(AuthenticatedPlayer)
-          .insert(PlayerName(message.0.name.clone()));
-        break;
-      }
-    }
-
-    let _ = network.send_message(
-      *user,
-      AuthResultMessage(auth_result)
-    ).map_err(|e| error!("{}", e));
-
   }
 }
 
