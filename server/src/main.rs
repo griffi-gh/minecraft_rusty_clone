@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::app::ScheduleRunnerSettings;
 use bevy_eventwork::{
   EventworkPlugin, Network,
   ConnectionId, NetworkEvent,
@@ -7,7 +8,7 @@ use bevy_eventwork::{
 };
 use std::{
   net::{SocketAddr, IpAddr, Ipv4Addr}, 
-  ops::Deref
+  ops::Deref, time::Duration
 };
 use shared::{
   consts::PORT,
@@ -40,6 +41,9 @@ fn main() {
   app.add_plugin(bevy::log::LogPlugin);
   
   app.insert_resource(bevy::tasks::TaskPoolBuilder::new().build());
+  app.insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(
+    1.0 / 60.0,
+  )));
 
   app.insert_resource(NetworkSettings::default());
   app.add_plugin(EventworkPlugin::<
