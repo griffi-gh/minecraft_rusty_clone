@@ -181,12 +181,10 @@ impl Plugin for NetworkingPlugin {
 
     app.add_startup_system(connect);
 
-    app.add_system(
-      handle_network_events
-        .chain(handle_auth_result)
-        .chain(request_chunks)
-        .chain(handle_incoming_chunks)
-        .chain(apply_decompress_tasks)
-    );
+    app.add_system(handle_network_events);
+    app.add_system(handle_auth_result);
+    app.add_system(request_chunks);
+    app.add_system(handle_incoming_chunks);
+    app.add_system(apply_decompress_tasks);
   }
 }
