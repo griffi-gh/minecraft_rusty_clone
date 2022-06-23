@@ -82,6 +82,8 @@ fn handle_disconnect_event(
 #[derive(Default, Debug)]
 pub struct AuthenticatedPlayerMap(HashSet<ConnectionId>);
 
+pub struct ServerPassword(Option<String>);
+
 pub struct AuthPlugin;
 impl Plugin for AuthPlugin {
   fn build(&self, app: &mut App) {
