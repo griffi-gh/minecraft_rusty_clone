@@ -12,10 +12,13 @@ use std::{
 };
 use shared::{
   consts::PORT,
+  types::{AuthData, AuthResult},
   networking::{
     ChunkDataMessage, 
     ChunkDataRequestMessage,
-    register_messages_client
+    register_messages_client,
+    AuthMessage,
+    AuthResultMessage
   }
 };
 use futures_lite::future;
@@ -50,27 +53,49 @@ pub fn connect(
 
 pub fn handle_network_events(
   mut new_network_events: EventReader<NetworkEvent>,
-  mut ev_connect: EventWriter<ConnectSuccess>,
-  mut ev_reqest: EventWriter<RequestChunk>
+  network: Res<Network<TcpProvider>>,
 ) {
   for event in new_network_events.iter() {
     info!("Received event");
     match event {
       NetworkEvent::Connected(_) => {
-        info!("Connected!");
-        info!("Spawn area size {0}x{0}; fetching chunks", SPAWN_AREA_SIZE);
-        ev_connect.send_default();
-        for x in 0..SPAWN_AREA_SIZE {
-          for y in 0..SPAWN_AREA_SIZE {
-            ev_reqest.send(RequestChunk(x, y));
-          }
-        }
+        info!("Connected! Authenticating..");
+        
+        network.send_message(
+          ConnectionId { id: 0 }, 
+          AuthMessage(AuthData::from_name("TestPlayer".into()))
+        ).unwrap();
       }
       NetworkEvent::Disconnected(_) => {
         info!("Disconnected!");
       }
       NetworkEvent::Error(err) => {
         error!("Network error: {}", err);
+        panic!();
+      }
+    }
+  }
+}
+
+fn handle_auth_result(
+  mut net_events: EventReader<NetworkData<AuthResultMessage>>,
+  mut ev_connect: EventWriter<ConnectSuccess>,
+  mut ev_reqest: EventWriter<RequestChunk>,
+) {
+  for event in net_events.iter() {
+    match &event.0 {
+      AuthResult::Ok() => {
+        info!("Auth OK!");
+        ev_connect.send_default();
+        info!("Spawn area size {0}x{0}; fetching chunks", SPAWN_AREA_SIZE);
+        for x in 0..SPAWN_AREA_SIZE {
+          for y in 0..SPAWN_AREA_SIZE {
+            ev_reqest.send(RequestChunk(x, y));
+          }
+        }
+      }
+      AuthResult::Error(error) => {
+        error!("Auth error: {}", error);
         panic!();
       }
     }
@@ -158,6 +183,7 @@ impl Plugin for NetworkingPlugin {
 
     app.add_system(
       handle_network_events
+        .chain(handle_auth_result)
         .chain(request_chunks)
         .chain(handle_incoming_chunks)
         .chain(apply_decompress_tasks)
