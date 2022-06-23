@@ -4,7 +4,9 @@ use serde::{Deserialize, Serialize};
 use crate::types::{
   CompressedChunkData,
   UserChatMessage,
-  ChatMessage
+  ChatMessage, 
+  AuthData,
+  AuthResult
 };
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
@@ -38,9 +40,23 @@ impl NetworkMessage for NewChatMessageMessage {
   const NAME: &'static str = "ChatMsg";
 }
 
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AuthMessage(pub AuthData);
+impl NetworkMessage for AuthMessage {
+  const NAME: &'static str = "AuthMessage";
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AuthResultMessage(pub AuthResult);
+impl NetworkMessage for AuthResultMessage {
+  const NAME: &'static str = "AuthResult";
+}
+
 /// The client registers messages that arrives from the server, so that
 /// it is prepared to handle them. Otherwise, an error occurs.
 pub fn register_messages_client(app: &mut App) {
+  app.listen_for_message::<AuthResultMessage, TcpProvider>();
   app.listen_for_message::<ChunkDataMessage, TcpProvider>();
   app.listen_for_message::<NewChatMessageMessage, TcpProvider>();
 }
@@ -48,6 +64,7 @@ pub fn register_messages_client(app: &mut App) {
 /// The server registers messages that arrives from a client, so that
 /// it is prepared to handle them. Otherwise, an error occurs.
 pub fn register_messages_server(app: &mut App) {
+  app.listen_for_message::<AuthMessage, TcpProvider>();
   app.listen_for_message::<ChunkDataRequestMessage, TcpProvider>();
   app.listen_for_message::<NewUserChatMessageMessage, TcpProvider>();
 }

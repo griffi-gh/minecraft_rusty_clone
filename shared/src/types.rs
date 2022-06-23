@@ -1,4 +1,4 @@
-use crate::consts::{CHUNK_HEIGHT, CHUNK_SIZE};
+use crate::consts::{CHUNK_HEIGHT, CHUNK_SIZE, PROTOCOL_VERSION};
 use serde::{Serialize, Deserialize};
 use serde_with::serde_as;
 use compress::rle;
@@ -94,4 +94,22 @@ impl ChatMessage {
       is_system: true
     }
   }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AuthData {
+  pub protocol_version: u16,
+  pub name: String,
+  //TODO add more stuff
+}
+impl AuthData {
+  pub fn from_name(name: String) -> Self {
+    Self { name, protocol_version: PROTOCOL_VERSION }
+  }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum AuthResult {
+  Ok(),
+  Error(String)
 }
