@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy::tasks::{Task, AsyncComputeTaskPool};
 use crate::{
+  assets::{AppState, BlockTextureAtlas},
   chunk::{Chunk, ChunkPosition},
   mesh_builder::{MeshBuilder, Face}
 };
@@ -27,7 +28,7 @@ pub struct MeshTask(Task<Mesh>);
 fn mesh_gen_system(
   mut commands: Commands,
   chunks: Query<(Entity, &Chunk, &ChunkPosition), Without<MeshStage>>,
-  pool: Res<AsyncComputeTaskPool>
+  pool: Res<AsyncComputeTaskPool>,
 ) {
   for (entity, chunk, position) in chunks.iter().take(MAX_STARTED_MESH_BUILD_TASKS_PER_TICK) {
     info!("Starting mesh build task for chunk: \"{:?}\"...", position);
@@ -58,11 +59,17 @@ fn mesh_gen_system(
                 check_block(&blocks[qx as usize][qy as usize][qz as usize])
               }
             };
-            const UV: [[f32; 2]; 4] = [
+            /*const UV: [[f32; 2]; 4] = [
               [0.0, 0.0],
               [0.0, 1.0],
               [1.0, 0.0],
               [1.0, 1.0]
+            ];*/
+            const UV: [[f32; 2]; 4] = [
+              [1.0, 1.0],
+              [1.0, 0.0],
+              [0.0, 1.0],
+              [0.0, 0.0],
             ];
             builder.add_face_if(query(0, 1,0), Face::Top,    coord, UV);
             builder.add_face_if(query(0,0,-1), Face::Front,  coord, UV);
@@ -87,6 +94,7 @@ fn apply_mesh_gen_tasks(
   mut query: Query<(Entity, &mut MeshTask, &mut MeshStage, &ChunkPosition), With<Chunk>>,
   mut meshes: ResMut<Assets<Mesh>>,
   mut materials: ResMut<Assets<StandardMaterial>>,
+  ref atlas: Res<BlockTextureAtlas>,
 ) {
   for (entity, mut task, mut stage, position) in query.iter_mut() {
     if let Some(mesh) = future::block_on(future::poll_once(&mut task.0)) {
@@ -100,7 +108,8 @@ fn apply_mesh_gen_tasks(
           (position.1 * CHUNK_SIZE as i64) as f32
         )),
         material: materials.add(StandardMaterial {
-          base_color: Color::rgb_u8(64, 128, 64),
+          base_color: Color::WHITE,
+          base_color_texture: Some(atlas.0.texture.as_weak()),
           unlit: true,
           ..default()
         }),
@@ -124,6 +133,6 @@ pub struct WorldPlugin;
 impl Plugin for WorldPlugin {
   fn build(&self, app: &mut App) {
     app.add_system(mesh_gen_system);
-    app.add_system(apply_mesh_gen_tasks);
+    app.add_system_set(SystemSet::on_update(AppState::Finished).with_system(apply_mesh_gen_tasks));
   }
 }
