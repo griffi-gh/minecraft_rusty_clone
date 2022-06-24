@@ -55,8 +55,12 @@ pub fn generate(x: i64, y: i64) -> ChunkData {
 
       //Generate terrain
       for y in 0..h {
-        //Check if cave exists at the point
-        let cave_check = if GENERATE_CAVES {
+        blocks[x][y][z] = Block { block_type: 1 };
+      }
+
+      //Generate caves
+      if GENERATE_CAVES {
+        for y in 0..h {
           let point_3d = [x_offset + x as f64, y as f64, y_offset + z as f64].map(|x| x * TERRAIN_H_SCALE);
           let point_3d_alt = [x_offset + x as f64, y as f64 + 10000., y_offset + z as f64].map(|x| x * TERRAIN_H_SCALE);
           let treshold = if y > MIN_TERRAIN_HEIGHT {
@@ -64,14 +68,13 @@ pub fn generate(x: i64, y: i64) -> ChunkData {
           } else {
             CAVE_TRESHOLD
           };
-          (cave_fbm.get(point_3d).abs() > treshold) && (cave_fbm.get(point_3d_alt).abs() > treshold)
-        } else { false };
-        //If no cave, place a block
-        if !cave_check {
-          blocks[x][y][z] = Block { block_type: 1 };
+          let is_cave = (cave_fbm.get(point_3d).abs() > treshold) && (cave_fbm.get(point_3d_alt).abs() > treshold);
+          if is_cave {
+            blocks[x][y][z] = Block { block_type: 0 };
+          }
         }
       }
-      
+
       //Place "Bedrock"
       blocks[x][0][z] = Block { block_type: 1 };
       if rng.gen_bool(0.5) {
