@@ -9,14 +9,17 @@ use rand::{rngs::SmallRng, SeedableRng, Rng};
 
 //TODO tune these values
 
-const TERRAIN_H_SCALE: f64       = 0.04;
-const MIN_TERRAIN_HEIGHT: usize  = 100;
-const TERRAIN_HEIGHT: f64        = 35.;
+const MIN_TERRAIN_HEIGHT: usize = 100;
+const TERRAIN_HEIGHT: f64       = 35.;
+const TERRAIN_NOISE_SCALE: f64  = 0.04;
+const TERRAIN_OCTAVES: usize    = 6;
 
-const GENERATE_CAVES: bool       = true;
-const CAVE_TRESHOLD: f64         = 0.15; //Range: 0 - 1; Increase to *reduce* the amount of caves
+const GENERATE_CAVES: bool      = true;
+const CAVE_TRESHOLD: f64        = 0.15; //Range: 0 - 1; Increase to *reduce* the amount of caves
+const CAVE_NOISE_SCALE: f64     = 0.04;
+const CAVE_OCTAVES: usize       = 2;
 
-const PRNG_SEED: u64             = 0x0DDB1A5E5BAD5EED; //Used only for bedrock generation
+const PRNG_SEED: u64            = 0x0DDB1A5E5BAD5EED; //Used only for bedrock generation
 
 //========================================
 
@@ -32,14 +35,13 @@ pub fn generate(x: i64, y: i64) -> ChunkData {
   let blocks = &mut data.0;
 
   //Create FBM (Fractional Brownian Motion) noise generator
-  //WARNING! fbm.get() return data in range -1..=1, NOT 0..=1
-  let fbm = Fbm::new();
-  let cave_fbm = {
-    let mut fbm = Fbm::new();
-    fbm.octaves = 2;
-    fbm
-  };
+  //fbm.get() return data in range -1..=1
 
+  let mut terrain_fbm = Fbm::new();
+  terrain_fbm.octaves = TERRAIN_OCTAVES;
+
+  let mut cave_fbm = Fbm::new();
+  cave_fbm.octaves = CAVE_OCTAVES;
 
   //Create RNG
   let mut rng = SmallRng::seed_from_u64(PRNG_SEED ^ (x as u64) ^ (y as u64));
@@ -50,8 +52,8 @@ pub fn generate(x: i64, y: i64) -> ChunkData {
     for z in 0..CHUNK_SIZE {
 
       //Get terrain height
-      let point = [x_offset + x as f64, y_offset + z as f64].map(|x| x * TERRAIN_H_SCALE);
-      let h = MIN_TERRAIN_HEIGHT + (TERRAIN_HEIGHT_HALF + (fbm.get(point) * TERRAIN_HEIGHT_HALF).round()) as usize;
+      let point = [x_offset + x as f64, y_offset + z as f64].map(|x| x * TERRAIN_NOISE_SCALE);
+      let h = MIN_TERRAIN_HEIGHT + (TERRAIN_HEIGHT_HALF + (terrain_fbm.get(point) * TERRAIN_HEIGHT_HALF).round()) as usize;
 
       //Generate terrain
       for y in 0..h {
@@ -61,8 +63,8 @@ pub fn generate(x: i64, y: i64) -> ChunkData {
       //Generate caves
       if GENERATE_CAVES {
         for y in 0..h {
-          let point_3d = [x_offset + x as f64, y as f64, y_offset + z as f64].map(|x| x * TERRAIN_H_SCALE);
-          let point_3d_alt = [x_offset + x as f64, y as f64 + 10000., y_offset + z as f64].map(|x| x * TERRAIN_H_SCALE);
+          let point_3d = [x_offset + x as f64, y as f64, y_offset + z as f64].map(|x| x * CAVE_NOISE_SCALE);
+          let point_3d_alt = [x_offset + x as f64, y as f64 + 10000., y_offset + z as f64].map(|x| x * CAVE_NOISE_SCALE);
           let treshold = if y > MIN_TERRAIN_HEIGHT {
             CAVE_TRESHOLD + (1. - CAVE_TRESHOLD) * ((y - MIN_TERRAIN_HEIGHT) as f64 / TERRAIN_HEIGHT)
           } else {
