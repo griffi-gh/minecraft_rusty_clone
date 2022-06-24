@@ -7,18 +7,19 @@ use rand::{rngs::SmallRng, SeedableRng, Rng};
 
 //========================================
 
+//TODO tune these values
+
 const TERRAIN_H_SCALE:    f64    = 0.04;
 const MIN_TERRAIN_HEIGHT: usize  = 85;
 const TERRAIN_HEIGHT: f64        = 35.;
 
 const GENERATE_CAVES: bool       = true;
-const USE_OLD_CAVES: bool        = false; //Use old system that's based on noise treshold instead of Perlin worms
-//new system config
-const CAVE_GAP_WIDTH: f64        = 0.15;   //Range: 0 - 1 (Only used by the new system)
-const TOP_CAVE_GAP_REDUCE: f64   = 0.9;    //Range: 0 - 1 (Only used by the new system, percentage of CAVE_GAP_WIDTH)
-//old system_config
-const CAVE_AMOUNT: f64           = 0.50;  //Range: 0 - 1 (Only used by the old system)
-const CAVE_TOP_REDUCE: f64       = 0.16;  //Range: 0 - 1 (Only used by the old system)
+//macaroni caves
+const CAVE_GAP_WIDTH: f64        = 0.125; //Range: 0 - 1
+const TOP_CAVE_GAP_REDUCE: f64   = 0.8;   //Range: 0 - 1 (percentage of CAVE_GAP_WIDTH)
+//beeg ones (e.g. old cave system, they are still used)
+const CAVE_AMOUNT: f64           = 0.4;   //Range: 0 - 1 
+const CAVE_TOP_REDUCE: f64       = 0.15;  //Range: 0 - 1
 
 const HANGING_CHECK: bool        = false; //Can look pretty weird, so disabled by default
 const HANGING_TRESHOLD: u8       = 6;
@@ -63,16 +64,21 @@ pub fn generate(x: i64, y: i64) -> ChunkData {
 
       //Generate terrain
       for y in 0..h {
+
         //Generate caves
         let cave_check = if GENERATE_CAVES {
           let point_3d = [x_offset + x as f64, y as f64, y_offset + z as f64].map(|x| x * TERRAIN_H_SCALE);
-          if USE_OLD_CAVES {
-            ((fbm.get(point_3d) + 1.) / 2.) < (CAVE_AMOUNT - (y as f64 / TERRAIN_MAX_HEIGHT).min(1.) * CAVE_TOP_REDUCE)
-          } else {
+          
+          let beeg_caves = ((fbm.get(point_3d) + 1.) / 2.) < (CAVE_AMOUNT - (y as f64 / TERRAIN_MAX_HEIGHT).min(1.) * CAVE_TOP_REDUCE);
+
+          let pasta_caves = {
             let gap_width = CAVE_GAP_WIDTH - CAVE_GAP_WIDTH * TOP_CAVE_GAP_REDUCE * (y as f64 / TERRAIN_MAX_HEIGHT).min(1.);
             ((0.5-(gap_width/2.))..=(0.5+(gap_width/2.))).contains(&((cave_fbm.get(point_3d) + 1.) / 2.))
-          }
+          };
+
+          beeg_caves || pasta_caves
         } else { false };
+
         //If no cave, place a block
         if !cave_check {
           blocks[x][y][z] = Block { block_type: 1 };
