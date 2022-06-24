@@ -12,8 +12,8 @@ use shared::{
 use futures_lite::future;
 
 
-const MAX_STARTED_MESH_BUILD_TASKS_PER_TICK: usize = 5;
-const MAX_PROCESSED_FINISHED_BUILD_TASKS_PER_TICK: usize = 0;
+const MAX_STARTED_MESH_BUILD_TASKS_PER_TICK: usize = 10;
+const MAX_PROCESSED_FINISHED_BUILD_TASKS_PER_TICK: usize = usize::MAX;
 
 #[derive(Component, Debug)]
 #[non_exhaustive]
