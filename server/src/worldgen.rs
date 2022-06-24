@@ -10,7 +10,7 @@ use rand::{rngs::SmallRng, SeedableRng, Rng};
 //TODO tune these values
 
 const TERRAIN_H_SCALE:    f64    = 0.04;
-const MIN_TERRAIN_HEIGHT: usize  = 85;
+const MIN_TERRAIN_HEIGHT: usize  = 100;
 const TERRAIN_HEIGHT: f64        = 35.;
 
 const GENERATE_CAVES: bool       = true;
