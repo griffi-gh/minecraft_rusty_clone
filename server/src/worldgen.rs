@@ -13,6 +13,7 @@ const MIN_TERRAIN_HEIGHT: usize = 100;
 const TERRAIN_HEIGHT: f64       = 35.;
 const TERRAIN_NOISE_SCALE: f64  = 0.04;
 const TERRAIN_OCTAVES: usize    = 6;
+const TERRAIN_STONE_START: f64  = 0.10;//Range: 0 - 1
 
 const GENERATE_CAVES: bool      = true;
 const CAVE_TRESHOLD: f64        = 0.15; //Range: 0 - 1; Increase to *reduce* the amount of caves
@@ -26,6 +27,8 @@ const PRNG_SEED: u64            = 0x0DDB1A5E5BAD5EED; //Used only for bedrock ge
 const TERRAIN_HEIGHT_HALF: f64 = TERRAIN_HEIGHT / 2.;
 
 pub fn generate(x: i64, y: i64) -> ChunkData {
+  //TODO: Hardcoded `block_type`s are TEMPORARY untip proper block type system is implemented
+
   //Get X/Y offsets
   let x_offset: f64 = (x * CHUNK_SIZE as i64) as f64;
   let y_offset: f64 = (y * CHUNK_SIZE as i64) as f64;
@@ -57,7 +60,14 @@ pub fn generate(x: i64, y: i64) -> ChunkData {
 
       //Generate terrain
       for y in 0..h {
-        blocks[x][y][z] = Block { block_type: 1 };
+
+        let stone_probability = if y > MIN_TERRAIN_HEIGHT { 
+          (1. - ((y - MIN_TERRAIN_HEIGHT) as f64 / (TERRAIN_HEIGHT * TERRAIN_STONE_START))).min(1.).max(0.)
+        } else { 1. };
+
+        blocks[x][y][z] = Block { 
+          block_type: if rng.gen_bool(stone_probability) { 1 } else { if y == (h - 1) { 4 } else { 5 } }
+        }; 
       }
 
       //Generate caves
@@ -77,10 +87,15 @@ pub fn generate(x: i64, y: i64) -> ChunkData {
         }
       }
 
-      //Place "Bedrock"
-      blocks[x][0][z] = Block { block_type: 1 };
-      if rng.gen_bool(0.5) {
-        blocks[x][1][z] = Block { block_type: 1 };
+      //Add Bedrock
+      {
+        let mut probability = 1.;
+        for i in 0..3 {
+          if rng.gen_bool(probability) {
+            blocks[x][i][z] = Block { block_type: 3 };
+          }
+          probability /= 2.;
+        }
       }
     }
   }

@@ -43,7 +43,7 @@ fn mesh_gen_system(
       for x in 0..CHUNK_SIZE {
         for y in 0..CHUNK_HEIGHT {
           for z in 0..CHUNK_SIZE {
-            let block = blocks[x][y][z];
+            let block: Block = blocks[x][y][z];
             if block.block_type == 0 {
               continue;
             }
@@ -70,8 +70,9 @@ fn mesh_gen_system(
               [0.0, 1.0],
               [0.0, 0.0],
             ];*/
-            let min = textures[0].min / atlas_size;
-            let max = textures[0].max / atlas_size;
+            //TODO: BLOCK TYPE THING IS *TEMPORARY*, REMOVE IT!
+            let min = textures[block.block_type as usize - 1].min / atlas_size;
+            let max = textures[block.block_type as usize - 1].max / atlas_size;
             let uv = [
               [max.x, max.y],
               [max.x, min.y],
