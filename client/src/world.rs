@@ -12,8 +12,8 @@ use shared::{
 use futures_lite::future;
 
 
-const MAX_STARTED_MESH_BUILD_TASKS_PER_TICK: usize = 10;
-
+const MAX_STARTED_MESH_BUILD_TASKS_PER_TICK: usize = 5;
+const MAX_PROCESSED_FINISHED_BUILD_TASKS_PER_TICK: usize = 0;
 
 #[derive(Component, Debug)]
 #[non_exhaustive]
@@ -29,10 +29,15 @@ fn mesh_gen_system(
   mut commands: Commands,
   chunks: Query<(Entity, &Chunk, &ChunkPosition), Without<MeshStage>>,
   pool: Res<AsyncComputeTaskPool>,
+  ref atlas: Res<BlockTextureAtlas>,
 ) {
   for (entity, chunk, position) in chunks.iter().take(MAX_STARTED_MESH_BUILD_TASKS_PER_TICK) {
     info!("Starting mesh build task for chunk: \"{:?}\"...", position);
     let blocks = chunk.0.0.clone();
+
+    let textures = atlas.0.textures.clone();
+    let atlas_size = atlas.0.size;
+
     let task = pool.spawn(async move {
       let mut builder = MeshBuilder::default();
       for x in 0..CHUNK_SIZE {
@@ -60,23 +65,25 @@ fn mesh_gen_system(
               }
             };
             /*const UV: [[f32; 2]; 4] = [
-              [0.0, 0.0],
-              [0.0, 1.0],
-              [1.0, 0.0],
-              [1.0, 1.0]
-            ];*/
-            const UV: [[f32; 2]; 4] = [
               [1.0, 1.0],
               [1.0, 0.0],
               [0.0, 1.0],
               [0.0, 0.0],
+            ];*/
+            let min = textures[0].min / atlas_size;
+            let max = textures[0].max / atlas_size;
+            let uv = [
+              [max.x, max.y],
+              [max.x, min.y],
+              [min.x, max.y],
+              [min.x, min.y],
             ];
-            builder.add_face_if(query(0, 1,0), Face::Top,    coord, UV);
-            builder.add_face_if(query(0,0,-1), Face::Front,  coord, UV);
-            builder.add_face_if(query(-1,0,0), Face::Left,   coord, UV);
-            builder.add_face_if(query(1, 0,0), Face::Right,  coord, UV);
-            builder.add_face_if(query(0, 0,1), Face::Back,   coord, UV);
-            builder.add_face_if(query(0,-1,0), Face::Bottom, coord, UV);
+            builder.add_face_if(query(0, 1,0), Face::Top,    coord, uv);
+            builder.add_face_if(query(0,0,-1), Face::Front,  coord, uv);
+            builder.add_face_if(query(-1,0,0), Face::Left,   coord, uv);
+            builder.add_face_if(query(1, 0,0), Face::Right,  coord, uv);
+            builder.add_face_if(query(0, 0,1), Face::Back,   coord, uv);
+            builder.add_face_if(query(0,-1,0), Face::Bottom, coord, uv);
             //=========================
           }
         }
@@ -96,7 +103,7 @@ fn apply_mesh_gen_tasks(
   mut materials: ResMut<Assets<StandardMaterial>>,
   ref atlas: Res<BlockTextureAtlas>,
 ) {
-  for (entity, mut task, mut stage, position) in query.iter_mut() {
+  for (entity, mut task, mut stage, position) in query.iter_mut().take(MAX_PROCESSED_FINISHED_BUILD_TASKS_PER_TICK) {
     if let Some(mesh) = future::block_on(future::poll_once(&mut task.0)) {
       let mut ecmd = commands.entity(entity);
       //create PbrBundle and Wireframe
@@ -132,7 +139,7 @@ fn apply_mesh_gen_tasks(
 pub struct WorldPlugin;
 impl Plugin for WorldPlugin {
   fn build(&self, app: &mut App) {
-    app.add_system(mesh_gen_system);
+    app.add_system_set(SystemSet::on_update(AppState::Finished).with_system(mesh_gen_system));
     app.add_system_set(SystemSet::on_update(AppState::Finished).with_system(apply_mesh_gen_tasks));
   }
 }
