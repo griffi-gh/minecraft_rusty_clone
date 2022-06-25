@@ -16,6 +16,10 @@ use shared::{
     register_messages_server,
     ChunkDataRequestMessage,
     ChunkDataMessage
+  },
+  blocks::{
+    BlockManagerPlugin,
+    BlockTypeManager
   }
 };
 
@@ -55,7 +59,10 @@ fn main() {
   app.add_startup_system(setup_networking);
   app.add_system(handle_network_events);
 
+  app.add_plugin(BlockManagerPlugin);
+
   app.add_plugin(AuthPlugin);
+
   app.add_system(handle_chunk_request_messages);
   app.add_system(handle_chat_messages);
 
@@ -130,7 +137,8 @@ fn find_player(
 fn handle_chunk_request_messages(
   mut chunk_requests: EventReader<NetworkData<ChunkDataRequestMessage>>,
   network: Res<Network<TcpProvider>>,
-  auth_players: Query<&Player, With<AuthenticatedPlayer>>
+  auth_players: Query<&Player, With<AuthenticatedPlayer>>,
+  blocks: Res<BlockTypeManager>
 ) {
   for message in chunk_requests.iter() {
     let user = message.source();
@@ -143,7 +151,7 @@ fn handle_chunk_request_messages(
     info!("User \"{}\" requested chunk at ({}, {})", user, message.x, message.y);
 
     let _ = network.send_message(*user, ChunkDataMessage {
-      data: generate_chunk(message.x, message.y).into(),
+      data: generate_chunk(message.x, message.y, &blocks).into(),
       x: message.x,
       y: message.y
     }).map_err(|e| error!("{}", e));

@@ -8,6 +8,7 @@ impl TexturePath {
     &self.0
   }
   pub fn full(&self) -> String {
+    //TODO sanitize path
     format!("textures/{}.png", &self.0)
   }
 }
@@ -36,6 +37,9 @@ const fn side_textures(map: [(CubeFace, usize); 6]) -> [usize; 6] {
     index += 1;
   }
   array
+}
+macro_rules! single_texture {
+  ($name: expr) => { vec![$name.into()] };
 }
 
 #[repr(u16)]
@@ -127,7 +131,7 @@ fn register_blocks(
     BlockMetadata {
       key: "dirt".into(),
       name: "Dirt Block".into(),
-      textures: vec!["dirt".into()],
+      textures: single_texture!("dirt"),
       ..default()
     },
     BlockMetadata {
@@ -151,19 +155,19 @@ fn register_blocks(
     BlockMetadata {
       key: "stone".into(),
       name: "Stone Block".into(),
-      textures: vec!["stone".into()],
+      textures: single_texture!("stone"),
       ..default()
     },
     BlockMetadata {
-      key: "stone".into(),
-      name: "Stone Block".into(),
-      textures: vec!["stone".into()],
+      key: "bedrock".into(),
+      name: "Bedrock".into(),
+      textures: single_texture!("bedrock"),
       ..default()
     }
   ]);
 }
 
-struct BlockManagerPlugin;
+pub struct BlockManagerPlugin;
 impl Plugin for BlockManagerPlugin {
   fn build(&self, app: &mut App) {
     app.init_resource::<BlockTypeManager>();

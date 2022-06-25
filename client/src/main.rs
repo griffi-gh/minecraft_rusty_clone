@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bevy::tasks::TaskPoolBuilder;
 
+use shared::blocks::BlockManagerPlugin;
+
 mod mesh_builder;
 mod chunk;
 mod world;
@@ -20,7 +22,6 @@ fn main() {
     title: "Minecraft clone".into(),
     ..default()
   });
-  //app.insert_resource(ImageSettings::default_nearest());
 
   app.add_plugins(DefaultPlugins);
   app.insert_resource(TaskPoolBuilder::new().build());
@@ -28,6 +29,8 @@ fn main() {
   app.add_plugin(bevy::pbr::wireframe::WireframePlugin);
 
   app.add_plugin(FlyCamPlugin);
+
+  app.add_plugin(BlockManagerPlugin);
 
   app.add_plugin(AssetLoaderPlugin);
   app.add_plugin(NetworkingPlugin);
