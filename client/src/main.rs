@@ -22,11 +22,12 @@ fn main() {
     title: "Minecraft clone".into(),
     ..default()
   });
+  app.insert_resource(Msaa { samples: 4 });
 
   app.add_plugins(DefaultPlugins);
   app.insert_resource(TaskPoolBuilder::new().build());
 
-  app.add_plugin(bevy::pbr::wireframe::WireframePlugin);
+  //app.add_plugin(bevy::pbr::wireframe::WireframePlugin);
 
   app.add_plugin(FlyCamPlugin);
 
