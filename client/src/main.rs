@@ -28,6 +28,12 @@ fn main() {
   app.insert_resource(TaskPoolBuilder::new().build());
 
   //app.add_plugin(bevy::pbr::wireframe::WireframePlugin);
+  
+  app.insert_resource(ClearColor(Color::rgb_u8(135, 206, 235)));
+  app.insert_resource(AmbientLight {
+    color: Color::WHITE,
+    brightness: 1.0,
+  });
 
   app.add_plugin(FlyCamPlugin);
 

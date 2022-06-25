@@ -135,7 +135,12 @@ fn apply_mesh_gen_tasks(
         material: materials.add(StandardMaterial {
           base_color: Color::WHITE,
           base_color_texture: Some(atlas.0.texture.as_weak()),
-          unlit: true,
+
+          reflectance: 0.,
+          metallic: 0.,
+          perceptual_roughness: 0.5,
+
+          //unlit: true,
           ..default()
         }),
         ..default()
