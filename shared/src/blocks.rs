@@ -131,17 +131,22 @@ fn register_blocks(
   mut blocks: ResMut<BlockTypeManager>
 ) {
   blocks.register_vec(vec![
+    //Air
     BlockMetadata {
       key: "air".into(),
       flags: BlockFlags::FlagAir as u16,
       ..default()
     },
+
+    //Dirt
     BlockMetadata {
       key: "dirt".into(),
       name: "Dirt Block".into(),
       textures: single_texture!("dirt"),
       ..default()
     },
+
+    //Grass
     BlockMetadata {
       key: "grass".into(),
       name: "Grass Block".into(),
@@ -160,12 +165,16 @@ fn register_blocks(
       ]),
       ..default()
     },
+
+    //Stone
     BlockMetadata {
       key: "stone".into(),
       name: "Stone Block".into(),
       textures: single_texture!("stone"),
       ..default()
     },
+
+    //Bedrock
     BlockMetadata {
       key: "bedrock".into(),
       name: "Bedrock".into(),
