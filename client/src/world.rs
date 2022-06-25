@@ -1,13 +1,14 @@
 use bevy::prelude::*;
 use bevy::tasks::{Task, AsyncComputeTaskPool};
 use crate::{
-  assets::{AppState, BlockTextureAtlas},
+  assets::{AppState, BlockTextureAtlas, BlockTypeManagerTextureHandles},
   chunk::{Chunk, ChunkPosition},
   mesh_builder::MeshBuilder
 };
 use shared::{
   types::{Block, CubeFace as Face},
-  consts::{CHUNK_HEIGHT, CHUNK_SIZE}
+  consts::{CHUNK_HEIGHT, CHUNK_SIZE},
+  blocks::{BlockTypeManager, BlockMetadata}
 };
 use futures_lite::future;
 
@@ -30,23 +31,29 @@ fn mesh_gen_system(
   chunks: Query<(Entity, &Chunk, &ChunkPosition), Without<MeshStage>>,
   pool: Res<AsyncComputeTaskPool>,
   ref atlas: Res<BlockTextureAtlas>,
+  block_types: Res<BlockTypeManager>,
+  handles: Res<BlockTypeManagerTextureHandles>
 ) {
   for (entity, chunk, position) in chunks.iter().take(MAX_STARTED_MESH_BUILD_TASKS_PER_TICK) {
     info!("Starting mesh build task for chunk: \"{:?}\"...", position);
-    let blocks = chunk.0.0.clone();
 
+    let blocks = chunk.0.0.clone();
     let textures = atlas.0.textures.clone();
+    let texture_handles = atlas.0.texture_handles.clone().unwrap();
     let atlas_size = atlas.0.size;
+    let metadatas: Vec<BlockMetadata> = block_types.block_types.clone();
+    let tex_map = handles.0.clone();
 
     let task = pool.spawn(async move {
       let mut builder = MeshBuilder::default();
       for x in 0..CHUNK_SIZE {
         for y in 0..CHUNK_HEIGHT {
           for z in 0..CHUNK_SIZE {
+            let check_block = |x: &Block| metadatas[x.block_type as usize].is_air();
+
             let block: Block = blocks[x][y][z];
-            if block.block_type == 0 {
-              continue;
-            }
+            if check_block(&block) { continue; }
+
             //=========================
             let coord = [x as u8, y as u8, z as u8];
             let query = |dx: i8, dy: i8, dz: i8| -> bool {
@@ -55,7 +62,6 @@ fn mesh_gen_system(
                 y as isize + dy as isize, 
                 z as isize + dz as isize 
               );
-              let check_block = |x: &Block| x.block_type == 0;
               const MAX_H: isize = (CHUNK_SIZE - 1) as isize;
               const MAX_V: isize = (CHUNK_HEIGHT - 1) as isize;
               if qx < 0 || qy < 0 || qz < 0 || qx > MAX_H || qy > MAX_V || qz > MAX_H {
@@ -70,21 +76,32 @@ fn mesh_gen_system(
               [0.0, 1.0],
               [0.0, 0.0],
             ];*/
-            //TODO: BLOCK TYPE THING IS *TEMPORARY*, REMOVE IT!
-            let min = textures[block.block_type as usize - 1].min / atlas_size;
-            let max = textures[block.block_type as usize - 1].max / atlas_size;
-            let uv = [
-              [max.x, max.y],
-              [max.x, min.y],
-              [min.x, max.y],
-              [min.x, min.y],
-            ];
-            builder.add_face_if(query(0, 1,0), Face::Top,    coord, uv);
-            builder.add_face_if(query(0,0,-1), Face::Front,  coord, uv);
-            builder.add_face_if(query(-1,0,0), Face::Left,   coord, uv);
-            builder.add_face_if(query(1, 0,0), Face::Right,  coord, uv);
-            builder.add_face_if(query(0, 0,1), Face::Back,   coord, uv);
-            builder.add_face_if(query(0,-1,0), Face::Bottom, coord, uv);
+
+            let face_uv = |face: Face| {
+              //what
+              //the
+              //fuck
+              let meta = &metadatas[block.block_type as usize];
+              let tex_index = meta.side_textures[face as usize];
+              let tex_path = meta.textures[tex_index].partial();
+              let handle = tex_map.get(tex_path).expect("No texture");
+              let atlas_tex_idx = *texture_handles.get(handle).unwrap();
+              let min = textures[atlas_tex_idx].min / atlas_size;
+              let max = textures[atlas_tex_idx].max / atlas_size;
+              [
+                [max.x, max.y],
+                [max.x, min.y],
+                [min.x, max.y],
+                [min.x, min.y],
+              ]
+            };
+
+            builder.add_face_if(query(0, 1,0), Face::Top,    coord, face_uv(Face::Top));
+            builder.add_face_if(query(0,0,-1), Face::Front,  coord, face_uv(Face::Front));
+            builder.add_face_if(query(-1,0,0), Face::Left,   coord, face_uv(Face::Left));
+            builder.add_face_if(query(1, 0,0), Face::Right,  coord, face_uv(Face::Right));
+            builder.add_face_if(query(0, 0,1), Face::Back,   coord, face_uv(Face::Back));
+            builder.add_face_if(query(0,-1,0), Face::Bottom, coord, face_uv(Face::Bottom));
             //=========================
           }
         }

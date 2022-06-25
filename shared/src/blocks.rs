@@ -2,27 +2,6 @@
 use bevy::{prelude::*, utils::HashMap};
 use crate::types::CubeFace;
 
-pub struct TexturePath(String);
-impl TexturePath {
-  pub fn partial(&self) -> &String {
-    &self.0
-  }
-  pub fn full(&self) -> String {
-    //TODO sanitize path
-    format!("textures/{}.png", &self.0)
-  }
-}
-impl From<String> for TexturePath {
-  fn from(string: String) -> Self {
-    Self(string)
-  }    
-}
-impl From<&str> for TexturePath {
-  fn from(string: &str) -> Self {
-    Self(string.into())
-  }    
-}
-
 const INVALID_KEY: &str = "__invalid_key__";
 
 const fn side_textures(map: [(CubeFace, usize); 6]) -> [usize; 6] {
@@ -49,6 +28,30 @@ pub enum BlockFlags {
   FlagLiquid = 1 << 2,
 }
 
+
+#[derive(Clone, Debug)]
+pub struct TexturePath(String);
+impl TexturePath {
+  pub fn partial(&self) -> &String {
+    &self.0
+  }
+  pub fn full(&self) -> String {
+    //TODO sanitize path
+    format!("textures/{}.png", &self.0)
+  }
+}
+impl From<String> for TexturePath {
+  fn from(string: String) -> Self {
+    Self(string)
+  }    
+}
+impl From<&str> for TexturePath {
+  fn from(string: &str) -> Self {
+    Self(string.into())
+  }    
+}
+
+#[derive(Clone, Debug)]
 pub struct BlockMetadata {
   pub index: Option<usize>,
   pub key: String,
@@ -65,7 +68,7 @@ impl Default for BlockMetadata {
       key: INVALID_KEY.into(),
       name: "block".into(),
       textures: Vec::new(),
-      side_textures: [0; 6],
+      side_textures: [0; 6], //TODO rename to face_textures
       optimize_sides: [true; 6],
       flags: BlockFlags::FlagSolid as u16,
     }
@@ -85,7 +88,7 @@ impl BlockMetadata {
 
 #[derive(Default)]
 pub struct BlockTypeManager {
-  block_types: Vec<BlockMetadata>,
+  pub block_types: Vec<BlockMetadata>,
   block_map: HashMap<String, usize>,
 }
 impl BlockTypeManager {
@@ -116,6 +119,11 @@ impl BlockTypeManager {
   }
   pub fn get_by_key(&self, key: &str) -> Option<&BlockMetadata> {
     Some(&self.block_types[*self.block_map.get(key)?])
+  }
+
+  //TODO rename
+  pub fn amount(&self) -> usize {
+    self.block_types.len()
   }
 }
 

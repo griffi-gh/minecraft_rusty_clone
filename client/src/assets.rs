@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 use bevy::asset::LoadState;
+use bevy::utils::HashMap;
+use shared::blocks::{BlockTypeManager};
 
 pub struct BlockTextureAtlas(pub TextureAtlas);
 
@@ -51,13 +53,33 @@ fn process_assets(
   info!("Created texture atlas, ready to build chunks");
 }
 
+#[derive(Default, Clone)]
+pub struct BlockTypeManagerTextureHandles(pub HashMap<String, Handle<Image>>);
+
+fn create_texture_handle_map(
+  mut handles: ResMut<BlockTypeManagerTextureHandles>,
+  blocks: Res<BlockTypeManager>,
+  server: Res<AssetServer>,
+) {
+  for block_type in &blocks.block_types {
+    for tex in &block_type.textures {
+      let full = tex.full();
+      let partial = tex.partial().clone();
+      println!("{}", full);
+      let handle: Handle<Image> = server.get_handle(full);
+      handles.0.insert(partial, handle);
+    }
+  }
+}
+
 pub struct AssetLoaderPlugin;
 impl Plugin for AssetLoaderPlugin {
   fn build(&self, app: &mut App) {
+    app.init_resource::<BlockTypeManagerTextureHandles>();
     app.init_resource::<TextureHandles>();
     app.add_state(AppState::LoadingAssets);
     app.add_system_set(SystemSet::on_enter(AppState::LoadingAssets).with_system(load_assets));
     app.add_system_set(SystemSet::on_update(AppState::LoadingAssets).with_system(check_assets));
-    app.add_system_set(SystemSet::on_enter(AppState::Finished).with_system(process_assets));
+    app.add_system_set(SystemSet::on_enter(AppState::Finished).with_system(process_assets.chain(create_texture_handle_map)));
   }
 }
