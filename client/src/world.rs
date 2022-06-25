@@ -3,10 +3,10 @@ use bevy::tasks::{Task, AsyncComputeTaskPool};
 use crate::{
   assets::{AppState, BlockTextureAtlas},
   chunk::{Chunk, ChunkPosition},
-  mesh_builder::{MeshBuilder, Face}
+  mesh_builder::MeshBuilder
 };
 use shared::{
-  types::Block,
+  types::{Block, CubeFace as Face},
   consts::{CHUNK_HEIGHT, CHUNK_SIZE}
 };
 use futures_lite::future;

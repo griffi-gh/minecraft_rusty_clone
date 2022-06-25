@@ -5,6 +5,17 @@ use compress::rle;
 use std::io::{Write, Read};
 use std::time::SystemTime;
 
+#[repr(usize)]
+#[derive(Clone, Copy)]
+pub enum CubeFace {
+  Top    = 0,
+  Front  = 1,
+  Left   = 2,
+  Right  = 3,
+  Back   = 4,
+  Bottom = 5,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Block {
   pub block_type: u16

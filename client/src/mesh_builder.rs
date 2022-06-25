@@ -1,16 +1,6 @@
 use bevy::prelude::*;
 use bevy::render::mesh::{PrimitiveTopology, Indices};
-
-#[repr(usize)]
-#[derive(Clone, Copy)]
-pub enum Face {
-  Top    = 0,
-  Front  = 1,
-  Left   = 2,
-  Right  = 3,
-  Back   = 4,
-  Bottom = 5,
-}
+use shared::types::CubeFace as Face;
 
 const FACE_VERTICES: [[[f32; 3]; 4]; 6] = [
   [[0., 1., 0.], [0., 1., 1.], [1., 1., 0.], [1., 1., 1.]],
