@@ -11,7 +11,8 @@ struct TextureHandles(Vec<HandleUntyped>);
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AppState {
   LoadingAssets,
-  Finished,
+  CreatingStuff,
+  Finished
 }
 
 fn load_assets(
@@ -27,9 +28,8 @@ fn check_assets(
   handles: Res<TextureHandles>,
   server: Res<AssetServer>,
 ) {
-  if let LoadState::Loaded = server.get_group_load_state(handles.0.iter().map(|handle| handle.id))
-  {
-    state.set(AppState::Finished).unwrap();
+  if let LoadState::Loaded = server.get_group_load_state(handles.0.iter().map(|handle| handle.id)) {
+    state.set(AppState::CreatingStuff).unwrap();
     info!("Finished loading textures");
   }
 }
@@ -46,6 +46,7 @@ fn process_assets(
     builder.add_texture(handle, image);
   }
   let atlas = builder.finish(&mut textures).expect("Failed to build a texture atlas");
+  info!("Inserting texture atlas");
   commands.insert_resource(
     BlockTextureAtlas(atlas)
   );
@@ -53,7 +54,6 @@ fn process_assets(
   info!("Created texture atlas, ready to build chunks");
 }
 
-//TODO rename, it's too long and doesn't actually hold any handles anymore!
 #[derive(Default, Clone)]
 pub struct BlockTextureIndexMap(pub HashMap<String, usize>);
 
@@ -62,6 +62,7 @@ fn create_texture_handle_map(
   atlas: Res<BlockTextureAtlas>,
   blocks: Res<BlockTypeManager>,
   server: Res<AssetServer>,
+  mut state: ResMut<State<AppState>>,
 ) {
   for block_type in &blocks.block_types {
     for tex in &block_type.textures {
@@ -76,16 +77,17 @@ fn create_texture_handle_map(
       info!("Texture \"{}\" at \"{}\" with atlas index {}", partial, &full, &index);
     }
   }
+  state.set(AppState::Finished).unwrap();
 }
 
 pub struct AssetLoaderPlugin;
 impl Plugin for AssetLoaderPlugin {
   fn build(&self, app: &mut App) {
-    app.init_resource::<BlockTextureIndexMap>();
     app.init_resource::<TextureHandles>();
+    app.init_resource::<BlockTextureIndexMap>();
     app.add_state(AppState::LoadingAssets);
     app.add_system_set(SystemSet::on_enter(AppState::LoadingAssets).with_system(load_assets));
     app.add_system_set(SystemSet::on_update(AppState::LoadingAssets).with_system(check_assets));
-    app.add_system_set(SystemSet::on_enter(AppState::Finished).with_system(process_assets.chain(create_texture_handle_map)));
+    app.add_system_set(SystemSet::on_enter(AppState::CreatingStuff).with_system(process_assets.chain(create_texture_handle_map)));
   }
 }
