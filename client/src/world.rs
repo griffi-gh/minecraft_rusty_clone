@@ -1,17 +1,22 @@
 use bevy::prelude::*;
-use bevy::tasks::{Task, AsyncComputeTaskPool};
+use bevy::{
+  tasks::{Task, AsyncComputeTaskPool},
+  utils::HashSet,
+};
 use crate::{
+  networking::RequestChunk,
+  player::{ChunkLocation, MainPlayer},
   assets::{AppState, BlockTextureAtlas, BlockTypeManagerTextureHandles},
   chunk::{Chunk, ChunkPosition},
   mesh_builder::MeshBuilder
 };
 use shared::{
   types::{Block, CubeFace as Face},
-  consts::{CHUNK_HEIGHT, CHUNK_SIZE},
+  consts::{CHUNK_HEIGHT, CHUNK_SIZE, DEFAULT_CLIENT_VIEW_DIST},
   blocks::{BlockTypeManager, BlockMetadata}
 };
 use futures_lite::future;
-
+use std::ops::RangeInclusive;
 
 const MAX_STARTED_MESH_BUILD_TASKS_PER_TICK: usize = 10;
 const MAX_PROCESSED_FINISHED_BUILD_TASKS_PER_TICK: usize = usize::MAX;
@@ -25,6 +30,48 @@ pub enum MeshStage {
 
 #[derive(Component, Debug)]
 pub struct MeshTask(Task<Mesh>);
+
+fn chunk_distance(pos: &ChunkPosition, loc: &ChunkLocation) -> usize {
+  ((pos.0 - loc.0).abs()).max((pos.1 - loc.1).abs()) as _
+}
+
+fn update_loaded_chunks_around_player (
+  mut commands: Commands,
+  mut ev_reqest: EventWriter<RequestChunk>,
+  chunks: Query<(Entity, &ChunkPosition)>,
+  player_chunk: Query<&ChunkLocation, (With<MainPlayer>, Changed<ChunkLocation>)>
+) {
+  if player_chunk.is_empty() { 
+    return;
+  }
+  let player_chunk = player_chunk.single();
+
+  println!("Player moved to chunk {:?}", &player_chunk);
+
+  //Unload chunks and build HashSet of chunks that are still loaded
+  let mut loaded = HashSet::new();
+  for (entity, chunk_pos) in chunks.iter() {
+    //loaded.insert(*chunk_pos);
+    if chunk_distance(chunk_pos, player_chunk) < DEFAULT_CLIENT_VIEW_DIST {
+      loaded.insert(*chunk_pos);
+    } else {
+      commands.entity(entity).despawn();
+      info!("Unloaded {:?}", chunk_pos);
+    }
+  }
+
+  //Load new chunks
+  const RANGE: RangeInclusive<i64> = (-(DEFAULT_CLIENT_VIEW_DIST as i64))..=(DEFAULT_CLIENT_VIEW_DIST as i64);
+  for x in RANGE {
+    for y in RANGE {
+      let position = ChunkPosition(x + player_chunk.0, y + player_chunk.1);
+      if !loaded.contains(&position) {
+        info!("Requesting chunk {:?}", &position);
+        ev_reqest.send(position.into());
+      }
+    }
+  }
+}
 
 fn mesh_gen_system(
   mut commands: Commands,
@@ -159,9 +206,11 @@ fn apply_mesh_gen_tasks(
   map: HashMap<ChunkPosition, String>
 }*/
 
+
 pub struct WorldPlugin;
 impl Plugin for WorldPlugin {
   fn build(&self, app: &mut App) {
+    app.add_system(update_loaded_chunks_around_player);
     app.add_system_set(SystemSet::on_update(AppState::Finished).with_system(mesh_gen_system));
     app.add_system_set(SystemSet::on_update(AppState::Finished).with_system(apply_mesh_gen_tasks));
   }

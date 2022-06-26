@@ -8,5 +8,5 @@ use shared::types::ChunkData;
 #[derive(Component, Clone)]
 pub struct Chunk(pub ChunkData);
 
-#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ChunkPosition(pub i64, pub i64);

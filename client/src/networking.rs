@@ -14,16 +14,16 @@ use shared::{
   consts::PORT,
   types::{AuthData, AuthResult},
   networking::{
+    register_messages_client,
     ChunkDataMessage, 
     ChunkDataRequestMessage,
-    register_messages_client,
     AuthMessage,
     AuthResultMessage
   }
 };
 use futures_lite::future;
 use crate::chunk::{Chunk, ChunkPosition};
-
+use crate::player::ChunkLocation;
 
 const SPAWN_AREA_SIZE: i64 = 8;
 
@@ -32,6 +32,16 @@ const SPAWN_AREA_SIZE: i64 = 8;
 pub struct ConnectSuccess;
 
 pub struct RequestChunk(i64, i64);
+impl From<ChunkPosition> for RequestChunk {
+  fn from(from: ChunkPosition) -> Self {
+    Self(from.0, from.1)
+  }
+}
+impl From<ChunkLocation> for RequestChunk {
+  fn from(from: ChunkLocation) -> Self {
+    Self(from.0, from.1)
+  }
+}
 
 pub fn connect(
   network: ResMut<Network<TcpProvider>>,
@@ -80,19 +90,19 @@ pub fn handle_network_events(
 fn handle_auth_result(
   mut net_events: EventReader<NetworkData<AuthResultMessage>>,
   mut ev_connect: EventWriter<ConnectSuccess>,
-  mut ev_reqest: EventWriter<RequestChunk>,
+  //mut ev_reqest: EventWriter<RequestChunk>,
 ) {
   for event in net_events.iter() {
     match &event.0 {
       AuthResult::Ok() => {
         info!("Auth OK!");
         ev_connect.send_default();
-        info!("Spawn area size {0}x{0}; fetching chunks", SPAWN_AREA_SIZE);
-        for x in 0..SPAWN_AREA_SIZE {
-          for y in 0..SPAWN_AREA_SIZE {
-            ev_reqest.send(RequestChunk(x, y));
-          }
-        }
+        //info!("Spawn area size {0}x{0}; fetching chunks", SPAWN_AREA_SIZE);
+        //for x in 0..SPAWN_AREA_SIZE {
+        //  for y in 0..SPAWN_AREA_SIZE {
+        //    ev_reqest.send(RequestChunk(x, y));
+        //  }
+        //}
       }
       AuthResult::Error(error) => {
         error!("Auth error: {}", error);

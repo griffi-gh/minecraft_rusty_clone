@@ -63,11 +63,14 @@ fn create_texture_handle_map(
 ) {
   for block_type in &blocks.block_types {
     for tex in &block_type.textures {
+      let partial = tex.partial();
+      if handles.0.contains_key(partial) {
+        continue;
+      }
       let full = tex.full();
-      let partial = tex.partial().clone();
-      println!("{}", full);
-      let handle: Handle<Image> = server.get_handle(full);
-      handles.0.insert(partial, handle);
+      let handle: Handle<Image> = server.get_handle(&full);
+      handles.0.insert(partial.clone(), handle);
+      info!("Texture \"{}\" at \"{}\"", partial, &full);
     }
   }
 }
