@@ -207,8 +207,16 @@ fn apply_mesh_gen_tasks(
 pub struct WorldPlugin;
 impl Plugin for WorldPlugin {
   fn build(&self, app: &mut App) {
-    app.add_system(update_loaded_chunks_around_player);
-    app.add_system_set(SystemSet::on_update(AppState::Finished).with_system(mesh_gen_system));
-    app.add_system_set(SystemSet::on_update(AppState::Finished).with_system(apply_mesh_gen_tasks));
+    app.add_system_set(
+      SystemSet::on_update(AppState::Finished)
+        .label("WorldMain")
+        .with_system(mesh_gen_system)
+        .with_system(apply_mesh_gen_tasks)
+    );
+    app.add_system_set(
+      SystemSet::on_update(AppState::Finished)
+        .after("WorldMain")
+        .with_system(update_loaded_chunks_around_player)
+    );
   }
 }
