@@ -196,7 +196,47 @@ fn register_blocks(
       name: "Bedrock".into(),
       textures: single_texture!("bedrock"),
       ..default()
-    }
+    },
+
+    //Iron ore
+    BlockMetadata {
+      key: "iron_ore".into(),
+      name: "Iron ore".into(),
+      textures: single_texture!("iron_ore"),
+      ..default()
+    },
+
+    //Diamond ore
+    BlockMetadata {
+      key: "diamond_ore".into(),
+      name: "Diamond ore".into(),
+      textures: single_texture!("diamond_ore"),
+      ..default()
+    },
+
+    //Coal ore
+    BlockMetadata {
+      key: "coal_ore".into(),
+      name: "Coal ore".into(),
+      textures: single_texture!("coal_ore"),
+      ..default()
+    },
+
+    //Emerald ore
+    BlockMetadata {
+      key: "emerald_ore".into(),
+      name: "Emerald ore".into(),
+      textures: single_texture!("emerald_ore"),
+      ..default()
+    },
+
+    //Gold ore
+    BlockMetadata {
+      key: "gold_ore".into(),
+      name: "Gold ore".into(),
+      textures: single_texture!("gold_ore"),
+      ..default()
+    },
   ]);
 }
 
