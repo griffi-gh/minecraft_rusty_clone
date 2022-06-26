@@ -146,13 +146,21 @@ fn mesh_gen_system(
                 [min.x, min.y],
               ]
             };
-
-            builder.add_face_if(query(0, 1,0), Face::Top,    coord, face_uv(Face::Top));
-            builder.add_face_if(query(0,0,-1), Face::Front,  coord, face_uv(Face::Front));
-            builder.add_face_if(query(-1,0,0), Face::Left,   coord, face_uv(Face::Left));
-            builder.add_face_if(query(1, 0,0), Face::Right,  coord, face_uv(Face::Right));
-            builder.add_face_if(query(0, 0,1), Face::Back,   coord, face_uv(Face::Back));
-            builder.add_face_if(query(0,-1,0), Face::Bottom, coord, face_uv(Face::Bottom));
+            
+            match &metadatas[block.block_type as usize].shape {
+              BlockShape::Cube => {
+                builder.add_face_if(query(0, 1,0), Face::Top,    coord, face_uv(Face::Top));
+                builder.add_face_if(query(0,0,-1), Face::Front,  coord, face_uv(Face::Front));
+                builder.add_face_if(query(-1,0,0), Face::Left,   coord, face_uv(Face::Left));
+                builder.add_face_if(query(1, 0,0), Face::Right,  coord, face_uv(Face::Right));
+                builder.add_face_if(query(0, 0,1), Face::Back,   coord, face_uv(Face::Back));
+                builder.add_face_if(query(0,-1,0), Face::Bottom, coord, face_uv(Face::Bottom));
+              },
+              _ => {
+                error!("UNIMPLEMENTED SHAPE");
+                panic!("UNIMPLEMENTED SHAPE");
+              }
+            }
             //=========================
           }
         }
