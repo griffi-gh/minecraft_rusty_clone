@@ -51,8 +51,7 @@ fn update_loaded_chunks_around_player (
   //Unload chunks and build HashSet of chunks that are still loaded
   let mut loaded = HashSet::new();
   for (entity, chunk_pos) in chunks.iter() {
-    //loaded.insert(*chunk_pos);
-    if chunk_distance(chunk_pos, player_chunk) < DEFAULT_CLIENT_VIEW_DIST {
+    if chunk_distance(chunk_pos, player_chunk) <= DEFAULT_CLIENT_VIEW_DIST {
       loaded.insert(*chunk_pos);
     } else {
       commands.entity(entity).despawn();
@@ -85,8 +84,8 @@ fn mesh_gen_system(
     info!("Starting mesh build task for chunk: \"{:?}\"...", position);
 
     let blocks = chunk.0.0.clone();
-    let textures = atlas.0.textures.clone();
-    let atlas_size = atlas.0.size;
+    let textures = atlas.get().textures.clone();
+    let atlas_size = atlas.get().size;
     let metadatas: Vec<BlockMetadata> = block_types.block_types.clone();
     let tex_map = index_map.0.clone();
 
@@ -179,7 +178,7 @@ fn apply_mesh_gen_tasks(
         )),
         material: materials.add(StandardMaterial {
           base_color: Color::WHITE,
-          base_color_texture: Some(atlas.0.texture.as_weak()),
+          base_color_texture: Some(atlas.0.as_ref().unwrap().texture.as_weak()),
 
           reflectance: 0.,
           metallic: 0.,

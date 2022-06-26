@@ -3,7 +3,13 @@ use bevy::asset::LoadState;
 use bevy::utils::HashMap;
 use shared::blocks::{BlockTypeManager};
 
-pub struct BlockTextureAtlas(pub TextureAtlas);
+#[derive(Default)]
+pub struct BlockTextureAtlas(pub Option<TextureAtlas>);
+impl BlockTextureAtlas {
+  pub fn get(&self) -> &TextureAtlas {
+    self.0.as_ref().expect("Atlas not inited")
+  }
+}
 
 #[derive(Default)]
 struct TextureHandles(Vec<HandleUntyped>);
@@ -35,6 +41,7 @@ fn check_assets(
 }
 
 fn process_assets(
+  mut atlas_res: ResMut<BlockTextureAtlas>,
   mut commands: Commands,
   mut textures: ResMut<Assets<Image>>,
   handles: Res<TextureHandles>,
@@ -47,11 +54,9 @@ fn process_assets(
   }
   let atlas = builder.finish(&mut textures).expect("Failed to build a texture atlas");
   info!("Inserting texture atlas");
-  commands.insert_resource(
-    BlockTextureAtlas(atlas)
-  );
+  atlas_res.0 = Some(atlas);
   commands.remove_resource::<TextureHandles>();
-  info!("Created texture atlas, ready to build chunks");
+  info!("Created texture atlas");
 }
 
 #[derive(Default, Clone)]
@@ -72,7 +77,7 @@ fn create_texture_handle_map(
       }
       let full = tex.full();
       let handle: Handle<Image> = server.get_handle(&full);
-      let index = *atlas.0.texture_handles.as_ref().unwrap().get(&handle).unwrap();
+      let index = *atlas.get().texture_handles.as_ref().unwrap().get(&handle).unwrap();
       map.0.insert(partial.clone(), index);
       info!("Texture \"{}\" at \"{}\" with atlas index {}", partial, &full, &index);
     }
@@ -80,11 +85,14 @@ fn create_texture_handle_map(
   state.set(AppState::Finished).unwrap();
 }
 
+//fn test() { info!("test") }
+
 pub struct AssetLoaderPlugin;
 impl Plugin for AssetLoaderPlugin {
   fn build(&self, app: &mut App) {
     app.init_resource::<TextureHandles>();
     app.init_resource::<BlockTextureIndexMap>();
+    app.init_resource::<BlockTextureAtlas>();
     app.add_state(AppState::LoadingAssets);
     app.add_system_set(SystemSet::on_enter(AppState::LoadingAssets).with_system(load_assets));
     app.add_system_set(SystemSet::on_update(AppState::LoadingAssets).with_system(check_assets));
