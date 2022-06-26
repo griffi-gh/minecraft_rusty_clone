@@ -53,24 +53,27 @@ fn process_assets(
   info!("Created texture atlas, ready to build chunks");
 }
 
+//TODO rename, it's too long and doesn't actually hold any handles anymore!
 #[derive(Default, Clone)]
-pub struct BlockTypeManagerTextureHandles(pub HashMap<String, Handle<Image>>);
+pub struct BlockTextureIndexMap(pub HashMap<String, usize>);
 
 fn create_texture_handle_map(
-  mut handles: ResMut<BlockTypeManagerTextureHandles>,
+  mut map: ResMut<BlockTextureIndexMap>,
+  atlas: Res<BlockTextureAtlas>,
   blocks: Res<BlockTypeManager>,
   server: Res<AssetServer>,
 ) {
   for block_type in &blocks.block_types {
     for tex in &block_type.textures {
       let partial = tex.partial();
-      if handles.0.contains_key(partial) {
+      if map.0.contains_key(partial) {
         continue;
       }
       let full = tex.full();
       let handle: Handle<Image> = server.get_handle(&full);
-      handles.0.insert(partial.clone(), handle);
-      info!("Texture \"{}\" at \"{}\"", partial, &full);
+      let index = *atlas.0.texture_handles.as_ref().unwrap().get(&handle).unwrap();
+      map.0.insert(partial.clone(), index);
+      info!("Texture \"{}\" at \"{}\" with atlas index {}", partial, &full, &index);
     }
   }
 }
@@ -78,7 +81,7 @@ fn create_texture_handle_map(
 pub struct AssetLoaderPlugin;
 impl Plugin for AssetLoaderPlugin {
   fn build(&self, app: &mut App) {
-    app.init_resource::<BlockTypeManagerTextureHandles>();
+    app.init_resource::<BlockTextureIndexMap>();
     app.init_resource::<TextureHandles>();
     app.add_state(AppState::LoadingAssets);
     app.add_system_set(SystemSet::on_enter(AppState::LoadingAssets).with_system(load_assets));

@@ -6,7 +6,7 @@ use bevy::{
 use crate::{
   networking::RequestChunk,
   player::{ChunkLocation, MainPlayer},
-  assets::{AppState, BlockTextureAtlas, BlockTypeManagerTextureHandles},
+  assets::{AppState, BlockTextureAtlas, BlockTextureIndexMap},
   chunk::{Chunk, ChunkPosition},
   mesh_builder::MeshBuilder
 };
@@ -79,17 +79,16 @@ fn mesh_gen_system(
   pool: Res<AsyncComputeTaskPool>,
   ref atlas: Res<BlockTextureAtlas>,
   block_types: Res<BlockTypeManager>,
-  handles: Res<BlockTypeManagerTextureHandles>
+  index_map: Res<BlockTextureIndexMap>
 ) {
   for (entity, chunk, position) in chunks.iter().take(MAX_STARTED_MESH_BUILD_TASKS_PER_TICK) {
     info!("Starting mesh build task for chunk: \"{:?}\"...", position);
 
     let blocks = chunk.0.0.clone();
     let textures = atlas.0.textures.clone();
-    let texture_handles = atlas.0.texture_handles.clone().unwrap();
     let atlas_size = atlas.0.size;
     let metadatas: Vec<BlockMetadata> = block_types.block_types.clone();
-    let tex_map = handles.0.clone();
+    let tex_map = index_map.0.clone();
 
     let task = pool.spawn(async move {
       let mut builder = MeshBuilder::default();
@@ -131,8 +130,7 @@ fn mesh_gen_system(
               let meta = &metadatas[block.block_type as usize];
               let tex_index = meta.side_textures[face as usize];
               let tex_path = meta.textures[tex_index].partial();
-              let handle = tex_map.get(tex_path).expect("No texture");
-              let atlas_tex_idx = *texture_handles.get(handle).unwrap();
+              let atlas_tex_idx = *tex_map.get(tex_path).expect("No texture");
               let min = textures[atlas_tex_idx].min / atlas_size;
               let max = textures[atlas_tex_idx].max / atlas_size;
               [

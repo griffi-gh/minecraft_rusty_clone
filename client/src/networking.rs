@@ -25,8 +25,7 @@ use futures_lite::future;
 use crate::chunk::{Chunk, ChunkPosition};
 use crate::player::ChunkLocation;
 
-const SPAWN_AREA_SIZE: i64 = 8;
-
+//const SPAWN_AREA_SIZE: i64 = 8;
 
 #[derive(Default)]
 pub struct ConnectSuccess;
