@@ -22,12 +22,24 @@ macro_rules! single_texture {
 }
 
 #[repr(u16)]
+#[non_exhaustive]
+#[derive(Clone, Copy, Debug)]
 pub enum BlockFlags {
   FlagAir    = 1 << 0,
   FlagSolid  = 1 << 1,
   FlagLiquid = 1 << 2,
 }
 
+#[non_exhaustive]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub enum BlockShape {
+  None,
+  Cube,
+  Cross
+}
+impl Default for BlockShape {
+  fn default() -> Self { Self::Cube }
+}
 
 #[derive(Clone, Debug)]
 pub struct TexturePath(String);
@@ -57,9 +69,10 @@ pub struct BlockMetadata {
   pub key: String,
   pub name: String,
   pub textures: Vec<TexturePath>,
-  pub side_textures: [usize; 6],
+  pub face_textures: [usize; 6],
   pub optimize_sides: [bool; 6],
   pub flags: u16,
+  pub shape: BlockShape
 }
 impl Default for BlockMetadata {
   fn default() -> Self {
@@ -68,9 +81,10 @@ impl Default for BlockMetadata {
       key: INVALID_KEY.into(),
       name: "block".into(),
       textures: Vec::new(),
-      side_textures: [0; 6], //TODO rename to face_textures
+      face_textures: [0; 6],
       optimize_sides: [true; 6],
       flags: BlockFlags::FlagSolid as u16,
+      shape: BlockShape::Cube,
     }
   }
 }
@@ -92,11 +106,12 @@ pub struct BlockTypeManager {
   block_map: HashMap<String, usize>,
 }
 impl BlockTypeManager {
-  //TODO rename this function
-  pub fn register_vec(&mut self, blocks: Vec<BlockMetadata>) {
-    for block in blocks {
-      self.register(block);
-    }
+  pub fn register_multiple<const SIZE: usize>(&mut self, blocks: [BlockMetadata; SIZE]) {
+    for block in blocks { self.register(block); }
+  }
+
+  pub fn register_multiple_vec(&mut self, blocks: Vec<BlockMetadata>) {
+    for block in blocks { self.register(block); }
   }
 
   //TODO proper error handling instead of panics
@@ -104,7 +119,7 @@ impl BlockTypeManager {
     assert!(&block.key[..] != INVALID_KEY && block.key.len() > 0, "Invalid or empty block key");
     assert!(!self.block_map.contains_key(&block.key), "Block with key \"{}\" is already registered", block.key);
     if block.textures.len() > 0 {
-      for index in block.side_textures {
+      for index in block.face_textures {
         assert!(index < block.textures.len(), "Invalid texture index in side_textures");
       }
     }
@@ -130,11 +145,12 @@ impl BlockTypeManager {
 fn register_blocks(
   mut blocks: ResMut<BlockTypeManager>
 ) {
-  blocks.register_vec(vec![
+  blocks.register_multiple([
     //Air
     BlockMetadata {
       key: "air".into(),
       flags: BlockFlags::FlagAir as u16,
+      shape: BlockShape::None,
       ..default()
     },
 
@@ -155,7 +171,7 @@ fn register_blocks(
         "grass_block_side".into(),
         "dirt".into()
       ],
-      side_textures: side_textures([
+      face_textures: side_textures([
         (CubeFace::Top   , 0),
         (CubeFace::Front , 1),
         (CubeFace::Left  , 1),

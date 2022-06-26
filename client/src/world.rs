@@ -3,6 +3,7 @@ use bevy::{
   tasks::{Task, AsyncComputeTaskPool},
   utils::HashSet,
 };
+use shared::blocks::BlockShape;
 use crate::{
   networking::RequestChunk,
   player::{ChunkLocation, MainPlayer},
@@ -94,7 +95,10 @@ fn mesh_gen_system(
       for x in 0..CHUNK_SIZE {
         for y in 0..CHUNK_HEIGHT {
           for z in 0..CHUNK_SIZE {
-            let check_block = |x: &Block| metadatas[x.block_type as usize].is_air();
+            let check_block = |x: &Block| {
+              let meta = &metadatas[x.block_type as usize];
+              meta.is_air() || meta.shape == BlockShape::None
+            };
 
             let block: Block = blocks[x][y][z];
             if check_block(&block) { continue; }
@@ -127,7 +131,7 @@ fn mesh_gen_system(
               //the
               //fuck
               let meta = &metadatas[block.block_type as usize];
-              let tex_index = meta.side_textures[face as usize];
+              let tex_index = meta.face_textures[face as usize];
               let tex_path = meta.textures[tex_index].partial();
               let atlas_tex_idx = *tex_map.get(tex_path).expect("No texture");
               let min = textures[atlas_tex_idx].min / atlas_size;
