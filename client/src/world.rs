@@ -95,15 +95,18 @@ fn mesh_gen_system(
       for x in 0..CHUNK_SIZE {
         for y in 0..CHUNK_HEIGHT {
           for z in 0..CHUNK_SIZE {
+            //=========================
+
             let check_block = |x: &Block| {
               let meta = &metadatas[x.block_type as usize];
-              meta.is_air() || meta.shape == BlockShape::None
+              meta.is_air() || meta.shape != BlockShape::Cube
             };
 
             let block: Block = blocks[x][y][z];
             if check_block(&block) { continue; }
 
             //=========================
+
             let coord = [x as u8, y as u8, z as u8];
             let query = |dx: i8, dy: i8, dz: i8| -> bool {
               let (qx, qy, qz) = (
