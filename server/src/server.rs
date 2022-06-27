@@ -23,10 +23,7 @@ use std::{
 use shared::consts::{PROTOCOL_ID,MAX_CLIENTS};
 use crate::Args;
 
-fn create_renet_server(
-  mut commands: Commands,
-  args: Res<Args>,
-) {
+fn create_renet_server(mut commands: Commands, args: Res<Args>) {
   //Get server address
   let public_addr = SocketAddr::new(args.ip, args.port);
   info!("Server address: {}", public_addr);
