@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::utils::HashMap;
 use bevy_renet::{
   renet::{
     ConnectToken, 
@@ -22,6 +23,11 @@ use std::{
 };
 use shared::consts::{PROTOCOL_ID,MAX_CLIENTS};
 use crate::Args;
+
+#[derive(Debug, Default)]
+struct Lobby {
+  players: HashMap<u64, Entity>,
+}
 
 fn create_renet_server(mut commands: Commands, args: Res<Args>) {
   //Get server address
@@ -58,10 +64,48 @@ fn panic_on_error_system(mut renet_error: EventReader<RenetError>) {
   }
 }
 
+fn server_update_system(
+  mut server_events: EventReader<ServerEvent>,
+  mut commands: Commands,
+  mut meshes: ResMut<Assets<Mesh>>,
+  mut materials: ResMut<Assets<StandardMaterial>>,
+  mut lobby: ResMut<Lobby>,
+  mut server: ResMut<RenetServer>,
+) {
+  for event in server_events.iter() {
+    match event {
+      ServerEvent::ClientConnected(id, _) => {
+        println!("Player {} connected.", id);
+
+        for &player_id in lobby.players.keys() {
+          let message = bincode::serialize(&ServerMessages::PlayerConnected { id: player_id }).unwrap();
+          server.send_message(*id, 0, message);
+        }
+
+        lobby.players.insert(*id, player_entity);
+
+        let message = bincode::serialize(&ServerMessages::PlayerConnected { id: *id }).unwrap();
+        server.broadcast_message(0, message);
+      }
+      ServerEvent::ClientDisconnected(id) => {
+        println!("Player {} disconnected.", id);
+        if let Some(player_entity) = lobby.players.remove(id) {
+            commands.entity(player_entity).despawn();
+        }
+
+        let message = bincode::serialize(&ServerMessages::PlayerDisconnected { id: *id }).unwrap();
+        server.broadcast_message(0, message);
+      }
+    }
+  }
+}
+
 pub struct ServerPlugin;
 impl Plugin for ServerPlugin {
   fn build(&self, app: &mut App) {
+    app.init_resource::<Lobby>();
     app.add_plugin(RenetServerPlugin);
     app.add_startup_system(create_renet_server);
+    app.add_system(panic_on_error_system);
   }
 }
