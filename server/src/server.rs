@@ -9,7 +9,7 @@ use bevy_renet::{
     RenetError,
     NETCODE_KEY_BYTES
   },
-  RenetServerPlugin
+  RenetServerPlugin,
 };
 use rand::{
   rngs::StdRng,
@@ -35,10 +35,7 @@ fn create_renet_server(
   let socket = UdpSocket::bind(public_addr).expect("Failed to bind UdpSocket");
   
   //Generate private key
-  let private_key = {
-    let mut rng = StdRng::from_entropy();
-    rng.gen::<[u8; NETCODE_KEY_BYTES]>()
-  };
+  let private_key: [u8; NETCODE_KEY_BYTES] = StdRng::from_entropy().gen();
 
   //Create connection config stuff
   let connection_config = RenetConnectionConfig::default();
@@ -56,6 +53,12 @@ fn create_renet_server(
 
   //Insert the server resource
   commands.insert_resource(server);
+}
+
+fn panic_on_error_system(mut renet_error: EventReader<RenetError>) {
+  for error in renet_error.iter() {
+    panic!("{}", error);
+  }
 }
 
 pub struct ServerPlugin;
