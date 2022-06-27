@@ -8,9 +8,6 @@ use noise::{Fbm, NoiseFn};
 use rand::{rngs::SmallRng, SeedableRng, Rng};
 
 //========================================
-
-//TODO tune these values
-
 const TERRAIN_NOISE_SCALE: f64  = 0.04;
 const TERRAIN_OCTAVES: usize    = 6;
 const MIN_TERRAIN_HEIGHT: usize = 100;

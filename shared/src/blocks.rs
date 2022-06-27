@@ -1,5 +1,6 @@
 //TODO
 use bevy::{prelude::*, utils::HashMap};
+use path_clean::clean as path_clean;
 use crate::types::CubeFace;
 
 const INVALID_KEY: &str = "__invalid_key__";
@@ -48,8 +49,7 @@ impl TexturePath {
     &self.0
   }
   pub fn full(&self) -> String {
-    //TODO sanitize path
-    format!("textures/{}.png", &self.0)
+    format!("textures/{}.png", path_clean(&self.0))
   }
 }
 impl From<String> for TexturePath {
