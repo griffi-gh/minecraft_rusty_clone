@@ -214,7 +214,7 @@ fn apply_mesh_gen_tasks(
 }
 
 /*struct WorldMap {
-  //TODO WorldMap
+  //TODO WorldMap struct
   map: HashMap<ChunkPosition, String>
 }*/
 

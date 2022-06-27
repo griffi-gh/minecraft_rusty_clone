@@ -58,8 +58,6 @@ pub fn generate(x: i64, y: i64, blocks: &Res<BlockTypeManager>) -> ChunkData {
     (emerald_ore_index, EMERALD_ORE_AMOUNT),
   ];
 
-  //TODO: Hardcoded `block_type`s are TEMPORARY untip proper block type system is implemented
-
   //Get X/Y offsets
   let x_offset: f64 = (x * CHUNK_SIZE as i64) as f64;
   let y_offset: f64 = (y * CHUNK_SIZE as i64) as f64;

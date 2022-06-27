@@ -1,4 +1,4 @@
 pub mod consts;
 pub mod types;
-pub mod networking;
+pub mod messages;
 pub mod blocks;

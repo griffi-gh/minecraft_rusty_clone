@@ -1,4 +1,3 @@
-//TODO
 use bevy::{prelude::*, utils::HashMap};
 use path_clean::clean as path_clean;
 use crate::types::CubeFace;
@@ -114,7 +113,7 @@ impl BlockTypeManager {
     for block in blocks { self.register(block); }
   }
 
-  //TODO proper error handling instead of panics
+  //TODO Proper error handling instead of panics
   pub fn register(&mut self, mut block: BlockMetadata) {
     assert!(&block.key[..] != INVALID_KEY && block.key.len() > 0, "Invalid or empty block key");
     assert!(!self.block_map.contains_key(&block.key), "Block with key \"{}\" is already registered", block.key);
@@ -136,7 +135,7 @@ impl BlockTypeManager {
     Some(&self.block_types[*self.block_map.get(key)?])
   }
 
-  //TODO rename
+  //TODO Rename
   pub fn amount(&self) -> usize {
     self.block_types.len()
   }

@@ -134,7 +134,7 @@ pub fn apply_decompress_tasks(
   mut commands: Commands,
   mut query: Query<(Entity, &mut DecompressTask), With<ChunkPosition>>,
 ) {
-  //TODO: Update instead of duplicating!
+  //TODO Update chunks instead of duplicating!
   query.for_each_mut(|(entity, mut task)| {
     if let Some(chunk) = future::block_on(future::poll_once(&mut task.0)) {
       commands.entity(entity)

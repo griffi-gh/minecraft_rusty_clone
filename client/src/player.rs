@@ -8,8 +8,8 @@ pub struct MainPlayer;
 #[derive(Component, Default)]
 pub struct Player;
 
-//TODO Rename, the name is too similar to ChunkPosition
-//TODO Move (meaybe to shared?) from player.rs since it works with all Entities
+//TODO ChunkLocation: Rename, the name is too similar to ChunkPosition
+//TODO ChunkLocation: Move (maybe to shared?) from player.rs since it works with all Entities
 #[derive(Component, Default, Debug)]
 pub struct ChunkLocation(pub i64, pub i64);
 

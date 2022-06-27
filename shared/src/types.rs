@@ -79,8 +79,6 @@ impl Into<ChunkData> for CompressedChunkData {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct UserChatMessage(String);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ChatMessage {
@@ -105,27 +103,4 @@ impl ChatMessage {
       is_system: true
     }
   }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct AuthData {
-  pub protocol_version: u16,
-  pub name: String,
-  pub password: Option<String>
-  //TODO add more stuff
-}
-impl AuthData {
-  pub fn from_name(name: String) -> Self {
-    Self {
-      name,
-      protocol_version: PROTOCOL_VERSION,
-      password: None
-    }
-  }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum AuthResult {
-  Ok(),
-  Error(String)
 }

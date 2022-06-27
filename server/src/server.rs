@@ -14,6 +14,7 @@ use bevy_renet::{
 };
 use rand::{
   rngs::StdRng,
+  //Traits
   SeedableRng as _,
   Rng as _
 };
@@ -21,13 +22,24 @@ use std::{
   net::{UdpSocket, SocketAddr}, 
   time::SystemTime,
 };
-use shared::consts::{PROTOCOL_ID,MAX_CLIENTS};
+use shared::{
+  messages::{
+    ServerMessages, 
+    ServerBlockChannelMessages,
+    ClientMessages
+  },
+  consts::{ PROTOCOL_ID, MAX_CLIENTS }
+};
 use crate::Args;
 
 #[derive(Debug, Default)]
 struct Lobby {
   players: HashMap<u64, Entity>,
 }
+
+#[derive(Component, Debug, Clone, Copy)]
+struct Player { id: u64 }
+
 
 fn create_renet_server(mut commands: Commands, args: Res<Args>) {
   //Get server address
@@ -76,23 +88,24 @@ fn server_update_system(
     match event {
       ServerEvent::ClientConnected(id, _) => {
         println!("Player {} connected.", id);
-
-        for &player_id in lobby.players.keys() {
-          let message = bincode::serialize(&ServerMessages::PlayerConnected { id: player_id }).unwrap();
-          server.send_message(*id, 0, message);
-        }
-
+        let player_entity = {
+          commands.spawn()
+            .insert(Transform::default())
+            .insert(GlobalTransform::default())
+            .insert(Player { id: *id })
+            .id()
+        };
         lobby.players.insert(*id, player_entity);
-
-        let message = bincode::serialize(&ServerMessages::PlayerConnected { id: *id }).unwrap();
-        server.broadcast_message(0, message);
+        server.broadcast_message(
+          0, 
+          bincode::serialize(&ServerMessages::PlayerConnected { id: *id }).unwrap()
+        );
       }
       ServerEvent::ClientDisconnected(id) => {
         println!("Player {} disconnected.", id);
         if let Some(player_entity) = lobby.players.remove(id) {
-            commands.entity(player_entity).despawn();
+          commands.entity(player_entity).despawn();
         }
-
         let message = bincode::serialize(&ServerMessages::PlayerDisconnected { id: *id }).unwrap();
         server.broadcast_message(0, message);
       }
