@@ -3,7 +3,7 @@ use bevy::{
   app::ScheduleRunnerSettings,
   log::LogPlugin,
   transform::TransformPlugin
-}
+};
 use clap::Parser;
 use std::{
   net::{IpAddr, Ipv4Addr}, 
