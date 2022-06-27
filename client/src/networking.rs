@@ -1,11 +1,5 @@
 use bevy::prelude::*;
 use bevy::tasks::{Task, AsyncComputeTaskPool};
-use bevy_eventwork::{
-  Network, ConnectionId,
-  NetworkEvent, NetworkData, 
-  EventworkPlugin,
-  tcp::{TcpProvider, NetworkSettings}, 
-};
 use std::{
   net::{Ipv4Addr, IpAddr, SocketAddr},
   ops::Deref
@@ -14,7 +8,6 @@ use shared::{
   consts::PORT,
   types::{AuthData, AuthResult},
   networking::{
-    register_messages_client,
     ChunkDataMessage, 
     ChunkDataRequestMessage,
     AuthMessage,

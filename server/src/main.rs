@@ -1,19 +1,17 @@
 use bevy::prelude::*;
 use bevy::app::ScheduleRunnerSettings;
-use bevy_eventwork::{
-  EventworkPlugin, Network,
-  ConnectionId, NetworkEvent,
-  NetworkData,
-  tcp::{TcpProvider, NetworkSettings}, 
-};
+use clap::Parser;
 use std::{
-  net::{SocketAddr, IpAddr, Ipv4Addr}, 
-  ops::Deref, time::Duration
+  net::{IpAddr, Ipv4Addr}, 
+  time::Duration,
 };
 use shared::{
-  consts::PORT,
+  consts::{
+    PORT as DEFAULT_PORT,
+    PROTOCOL_ID,
+    MAX_CLIENTS
+  },
   networking::{
-    register_messages_server,
     ChunkDataRequestMessage,
     ChunkDataMessage
   },
@@ -23,10 +21,13 @@ use shared::{
   }
 };
 
+mod server;
 mod auth;
-use auth::AuthPlugin;
-
 mod worldgen;
+mod chat;
+
+use server::ServerPlugin;
+use auth::AuthPlugin;
 use worldgen::generate as generate_chunk;
 
 #[derive(Component)]
@@ -36,27 +37,36 @@ struct Player(ConnectionId);
 struct AuthenticatedPlayer;
 
 #[derive(Component)]
-struct PlayerName(String);
+struct Username(String);
+
+const DEFAULT_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
+
+/// Simple program to greet a person
+#[derive(Parser, Debug)]
+#[clap()]
+struct Args {
+  #[clap(short, long, value_parser, default_value_t = DEFAULT_IP)]
+  ip: IpAddr,
+
+  #[clap(short, long, value_parser, default_value_t = DEFAULT_PORT)]
+  port: u16,
+}
 
 fn main() {
-  let mut app = App::new();
+  //Parse console args
+  let args = Args::parse();
 
+  //Create a Bevy App
+  let mut app = App::new();
+  
+  app.insert_resource(args);
   app.add_plugins(MinimalPlugins);
   app.add_plugin(bevy::log::LogPlugin);
   
   app.insert_resource(bevy::tasks::TaskPoolBuilder::new().build());
-  app.insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(
-    1.0 / 60.0,
-  )));
+  app.insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(1./60.)));
 
-  app.insert_resource(NetworkSettings::default());
-  app.add_plugin(EventworkPlugin::<
-    TcpProvider,
-    bevy::tasks::TaskPool,
-  >::default());
-  register_messages_server(&mut app);
-  
-  app.add_startup_system(setup_networking);
+  app.add_plugin(ServerPlugin);
   app.add_system(handle_network_events);
 
   app.add_plugin(BlockManagerPlugin);
@@ -69,27 +79,7 @@ fn main() {
   app.run();
 }
 
-fn setup_networking(
-  mut net: ResMut<Network<TcpProvider>>,
-  settings: Res<NetworkSettings>,
-  runtime: Res<bevy::tasks::TaskPool>,
-) {
-  let ip_address: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
-  info!("Server address: {}:{}", ip_address, PORT);
-  match net.listen(
-    SocketAddr::new(ip_address, PORT),
-    runtime.deref(),
-    &settings,
-  ) {
-    Ok(_) => {
-      info!("Started listening for new connections!");
-    },
-    Err(err) => {
-      error!("Could not start listening: {}", err);
-      panic!();
-    }
-  }
-}
+
 
 fn handle_network_events(
   mut commands: Commands,

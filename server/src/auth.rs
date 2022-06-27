@@ -10,7 +10,7 @@ use shared::{
   types::AuthResult,
   networking::{AuthMessage, AuthResultMessage}
 };
-use crate::{Player, PlayerName, AuthenticatedPlayer};
+use crate::{Player, Username, AuthenticatedPlayer, Username};
 
 fn handle_auth_request_messages(
   mut commands: Commands,
@@ -50,7 +50,7 @@ fn handle_auth_request_messages(
       if player.0 == *user {
         commands.entity(entity)
           .insert(AuthenticatedPlayer)
-          .insert(PlayerName(message.0.name.clone()));
+          .insert(Username(message.0.name.clone()));
         auth_map.0.insert(*user);
         respond(AuthResult::Ok());
         return;
