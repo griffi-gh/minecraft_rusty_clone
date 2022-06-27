@@ -11,6 +11,7 @@ use bevy_renet::{
     NETCODE_KEY_BYTES
   },
   RenetServerPlugin,
+  run_if_client_conected
 };
 use rand::{
   rngs::StdRng,
@@ -68,6 +69,8 @@ fn create_renet_server(mut commands: Commands, args: Res<Args>) {
 
   //Insert the server resource
   commands.insert_resource(server);
+
+  info!("Server started");
 }
 
 fn panic_on_error_system(mut renet_error: EventReader<RenetError>) {
@@ -79,8 +82,6 @@ fn panic_on_error_system(mut renet_error: EventReader<RenetError>) {
 fn server_update_system(
   mut server_events: EventReader<ServerEvent>,
   mut commands: Commands,
-  mut meshes: ResMut<Assets<Mesh>>,
-  mut materials: ResMut<Assets<StandardMaterial>>,
   mut lobby: ResMut<Lobby>,
   mut server: ResMut<RenetServer>,
 ) {
@@ -90,8 +91,7 @@ fn server_update_system(
         println!("Player {} connected.", id);
         let player_entity = {
           commands.spawn()
-            .insert(Transform::default())
-            .insert(GlobalTransform::default())
+            .insert_bundle(TransformBundle::default())
             .insert(Player { id: *id })
             .id()
         };

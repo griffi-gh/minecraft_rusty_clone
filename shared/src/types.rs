@@ -1,4 +1,4 @@
-use crate::consts::{CHUNK_HEIGHT, CHUNK_SIZE, PROTOCOL_VERSION};
+use crate::consts::{CHUNK_HEIGHT, CHUNK_SIZE, PROTOCOL_ID};
 use serde::{Serialize, Deserialize};
 use serde_with::serde_as;
 use compress::rle;

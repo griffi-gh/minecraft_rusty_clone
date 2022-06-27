@@ -1,5 +1,9 @@
 use bevy::prelude::*;
-use bevy::app::ScheduleRunnerSettings;
+use bevy::{
+  app::ScheduleRunnerSettings,
+  log::LogPlugin,
+  transform::TransformPlugin
+}
 use clap::Parser;
 use std::{
   net::{IpAddr, Ipv4Addr}, 
@@ -15,7 +19,7 @@ mod worldgen;
 mod chat;
 
 use server::ServerPlugin;
-//use worldgen::generate as generate_chunk;
+use worldgen::generate as generate_chunk;
 
 #[derive(Parser, Debug)]
 #[clap()]
@@ -31,8 +35,10 @@ fn main() {
   let mut app = App::new();
 
   app.insert_resource(Args::parse());
+
   app.add_plugins(MinimalPlugins);
-  app.add_plugin(bevy::log::LogPlugin);
+  app.add_plugin(LogPlugin);
+  app.add_plugin(TransformPlugin);
   
   app.insert_resource(bevy::tasks::TaskPoolBuilder::new().build());
   app.insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(1./60.)));
@@ -42,7 +48,6 @@ fn main() {
 
   app.run();
 }
-
 
 
 // fn handle_network_events(
