@@ -6,15 +6,8 @@ use std::{
   time::Duration,
 };
 use shared::{
-  consts::{
-    DEFAULT_PORT,
-    PROTOCOL_ID,
-    MAX_CLIENTS
-  },
-  blocks::{
-    BlockManagerPlugin,
-    BlockTypeManager
-  }
+  consts::DEFAULT_PORT,
+  blocks::BlockManagerPlugin
 };
 
 mod server;
@@ -22,24 +15,12 @@ mod worldgen;
 mod chat;
 
 use server::ServerPlugin;
-use worldgen::generate as generate_chunk;
+//use worldgen::generate as generate_chunk;
 
-// #[derive(Component)]
-// struct Player(ConnectionId);
-
-// #[derive(Component)]
-// struct AuthenticatedPlayer;
-
-// #[derive(Component)]
-// struct Username(String);
-
-const DEFAULT_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
-
-/// Simple program to greet a person
 #[derive(Parser, Debug)]
 #[clap()]
 struct Args {
-  #[clap(short, long, value_parser, default_value_t = DEFAULT_IP)]
+  #[clap(short, long, value_parser, default_value_t = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)))]
   ip: IpAddr,
 
   #[clap(short, long, value_parser, default_value_t = DEFAULT_PORT)]
@@ -47,13 +28,9 @@ struct Args {
 }
 
 fn main() {
-  //Parse console args
-  let args = Args::parse();
-
-  //Create a Bevy App
   let mut app = App::new();
-  
-  app.insert_resource(args);
+
+  app.insert_resource(Args::parse());
   app.add_plugins(MinimalPlugins);
   app.add_plugin(bevy::log::LogPlugin);
   
@@ -64,10 +41,6 @@ fn main() {
   app.add_plugin(ServerPlugin);
 
   app.run();
-
-  // app.add_system(handle_network_events);
-  // app.add_system(handle_chunk_request_messages);
-  // app.add_system(handle_chat_messages);
 }
 
 
@@ -76,7 +49,6 @@ fn main() {
 //   mut commands: Commands,
 //   mut network_events: EventReader<NetworkEvent>,
 //   players: Query<(Entity, &Player)>
-//   //network: Res<Network<TcpProvider>>,
 // ) {
 //   for event in network_events.iter() {
 //     match event {
@@ -102,7 +74,6 @@ fn main() {
 //   }
 // }
 
-// //not a system!
 // fn find_player(
 //   connection: &ConnectionId,
 //   players: &Query<&Player, With<AuthenticatedPlayer>>
