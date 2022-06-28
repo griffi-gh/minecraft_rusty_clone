@@ -10,6 +10,8 @@ use warp::Filter;
 
 use base64;
 
+use serde_json::json;
+
 use std::{
   net::SocketAddr, time::SystemTime,
 };
@@ -32,7 +34,15 @@ fn start(
     let runtime = TokioRuntime::new().unwrap();
     runtime.block_on(async move {
       //=========================================================
-      //TODO server metadata
+      let root = warp::path!().map(move || {
+        warp::reply::json(&json!({
+          "name": "Game Server",
+          "description": "no description",
+          "icon": null,
+          "private": false,
+        }))
+      });
+
       let connect = 
         warp::path!("connect")
         .and(warp::query::<HashMap<String, String>>())
@@ -40,21 +50,29 @@ fn start(
           //TODO Password auth
           //TODO Rate limiting
           info!("Connect token requested");
+
           let current_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
           let client_id = current_time.as_millis() as u64;
-          let server_addresses = vec![SocketAddr::new(args.ip, args.port)];
+          let server_addresses = vec![SocketAddr::new(args.ip, args.port_server)];
+
           let mut buffer = Vec::new();
           ConnectToken::generate(
             current_time, PROTOCOL_ID, EXPIRE_SECONDS, client_id, TIMEOUT_SECONDS, 
-            server_addresses, None, &private_key
-          ).unwrap().write(&mut buffer).unwrap();
-          base64::encode(&buffer)
+            server_addresses.clone(), None, &private_key
+          ).expect("Failed to generate the token").write(&mut buffer).unwrap();
+
+          warp::reply::json(&json!({
+            "success": true,
+            "token": base64::encode(&buffer),
+            "port": server_addresses[0].port(),
+            "client_id": client_id,
+          }))
         });
 
-      let api = connect;
+      let api = connect.or(root);
 
-      let port = args.port + 1;
-      info!("Starting API on port {}", port);
+      let port = args.port_api;
+      info!("API Address: {}", port);
       warp::serve(api)
         .run(SocketAddr::new(args.ip, port))
         .await;

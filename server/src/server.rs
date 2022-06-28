@@ -53,8 +53,8 @@ fn create_renet_server(
   key: Res<PrivateKey>
 ) {
   //Get server address
-  let public_addr = SocketAddr::new(args.ip, args.port);
-  info!("Server address: {}", public_addr);
+  let public_addr = SocketAddr::new(args.ip, args.port_server);
+  info!("Server Address: {}", public_addr);
 
   //Bind a udp socket
   let socket = UdpSocket::bind(public_addr).expect("Failed to bind UdpSocket");

@@ -10,11 +10,12 @@ use bevy_renet::{
 };
 use futures_lite::future;
 use bincode;
+use serde_json::Value as JsonValue;
 use reqwest;
 use base64;
 use std::{
   time::{SystemTime},
-  net::{SocketAddr, UdpSocket},
+  net::{IpAddr, SocketAddr, UdpSocket},
   io::Cursor
 };
 use shared::{
@@ -46,27 +47,40 @@ pub struct DecompressTask(Task<Chunk>);
 fn create_renet_client(
   mut commands: Commands
 ) {
-  let server_addr = SocketAddr::new([127,0,0,1].into(), DEFAULT_PORT);
-  let server_addr_no_port = SocketAddr::new(server_addr.ip(), 0);
-  let url = format!("{}:{}", server_addr.ip().to_string(), DEFAULT_PORT + 1);
+  let server_ip: IpAddr = [127,0,0,1].into();
+  let api_url = format!("http://{}:{}", server_ip.to_string(), DEFAULT_PORT);
+
+  //Get connection data
+  let conn_data: JsonValue = {
+    let res = reqwest::blocking::get(format!("{}/connect", api_url)).expect("Failed to get the connection token");
+    let res_bytes = &res.bytes().unwrap()[..];
+    serde_json::from_slice(res_bytes).unwrap()
+  };
+
+  //Parse it
+  let (connect_token, client_id, port) = (
+    {
+      let token_base64 = conn_data["token"].as_str().expect("No token in response");
+      let token_bytes = base64::decode(token_base64).expect("Invalid token Base64");
+      ConnectToken::read(&mut Cursor::new(&token_bytes)).unwrap()
+    },
+    conn_data["client_id"].as_u64().expect("No Client ID in response"),
+    conn_data["port"].as_u64().expect("No port in response") as u16,
+  );
+
+  let server_addr = SocketAddr::new(server_ip, port);
 
   //Bind socket
-  let socket = UdpSocket::bind(server_addr_no_port).unwrap();
+  let socket = UdpSocket::bind(server_addr).unwrap();
 
   //Create config things
   let connection_config = RenetConnectionConfig::default();
   let current_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-  let client_id = current_time.as_millis() as u64;
 
-  //Get token
-  let res = reqwest::blocking::get(format!("http://{}/connect", url)).expect("Failed to get the connection token");
-  let res_bytes = res.bytes().unwrap();
-  let token_bytes = base64::decode(res_bytes).unwrap();
-  let token = ConnectToken::read(&mut Cursor::new(&token_bytes)).unwrap();
-
-  let client = RenetClient::new(current_time, socket, client_id, token, connection_config).unwrap();
-
+  let client = RenetClient::new(current_time, socket, client_id, connect_token, connection_config).unwrap();
   commands.insert_resource(client);
+
+  info!("Client started");
 }
 
 fn handle_incoming_stuff(
@@ -75,6 +89,7 @@ fn handle_incoming_stuff(
   pool: Res<AsyncComputeTaskPool>,
   mut chat: ResMut<ChatMessages>,
 ) {
+  if !client.is_connected() { return; }
   for channel_id in 0..=2 {
     while let Some(message) = client.receive_message(channel_id) {
       if let Ok(message) = bincode::deserialize(&message) {
@@ -99,6 +114,22 @@ fn handle_incoming_stuff(
   }
 }
 
+pub fn request_chunks(
+  mut events: EventReader<RequestChunk>,
+  mut client: ResMut<RenetClient>,
+) {
+  if !client.is_connected() { return; }
+  for RequestChunk(x, y) in events.iter() {
+    info!("Chunk {},{} - Requested", x, y);
+    client.send_message(
+      CHANNEL_RELIABLE, 
+      bincode::serialize(
+        &ClientMessages::ChunkRequest { x: *x, y: *y }
+      ).unwrap()
+    );
+  }
+}
+
 pub fn apply_decompress_tasks(
   mut commands: Commands,
   mut query: Query<(Entity, &mut DecompressTask, &ChunkPosition)>,
@@ -112,21 +143,6 @@ pub fn apply_decompress_tasks(
         info!("Chunk {:?} - Decompressed", position);
     }
   });
-}
-
-pub fn request_chunks(
-  mut events: EventReader<RequestChunk>,
-  mut client: ResMut<RenetClient>,
-) {
-  for RequestChunk(x, y) in events.iter() {
-    info!("Chunk {},{} - Requested", x, y);
-    client.send_message(
-      CHANNEL_RELIABLE, 
-      bincode::serialize(
-        &ClientMessages::ChunkRequest { x: *x, y: *y }
-      ).unwrap()
-    );
-  }
 }
 
 pub struct NetworkingPlugin;

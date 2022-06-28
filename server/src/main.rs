@@ -26,11 +26,14 @@ use http_server::HttpServerPlugin;
 #[derive(Parser, Debug, Clone)]
 #[clap()]
 struct Args {
-  #[clap(short, long, value_parser, default_value_t = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)))]
+  #[clap(short, long, value_parser, default_value_t = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)))]
   ip: IpAddr,
 
-  #[clap(short, long, value_parser, default_value_t = DEFAULT_PORT)]
-  port: u16,
+  #[clap(long, value_parser, default_value_t = DEFAULT_PORT)]
+  port_api: u16,
+
+  #[clap(long, value_parser, default_value_t = DEFAULT_PORT + 1)]
+  port_server: u16,
 }
 
 fn main() {
