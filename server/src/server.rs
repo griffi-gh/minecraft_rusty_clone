@@ -27,6 +27,7 @@ use shared::{
   messages::{ServerMessages, ClientMessages},
   consts::{ PROTOCOL_ID, MAX_CLIENTS },
   utils::panic_on_renet_error_system,
+  types::{ChatMessage}
 };
 use crate::{
   worldgen::generate as generate_chunk,
@@ -132,8 +133,18 @@ fn handle_incoming_stuff(
                 }).unwrap()
               );
             },
-            ClientMessages::ChatMessage { message: _message } => {
-              warn!("Chat messages are not handled yet");
+            ClientMessages::ChatMessage { message } => {
+              server.broadcast_message_except(
+                client_id, CHANNEL_RELIABLE, 
+                bincode::serialize(&ServerMessages::ChatMessage { 
+                  message: ChatMessage {
+                    message,
+                    from: client_id.to_string(), //TODO use username
+                    timestamp: SystemTime::now(),
+                    is_system: false
+                  }
+                }).unwrap()
+              );
             },
             _ => warn!("Unhandled message type")
           }
