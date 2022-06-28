@@ -97,7 +97,7 @@ fn server_update_system(
         };
         lobby.players.insert(*id, player_entity);
         server.broadcast_message_except(
-          id,
+          *id,
           0, 
           bincode::serialize(&ServerMessages::PlayerConnected { id: *id }).unwrap()
         );
