@@ -2,12 +2,10 @@ use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_renet::{
   renet::{
-    ConnectToken, 
     RenetConnectionConfig, 
     RenetServer, 
     ServerConfig,
     ServerEvent, 
-    RenetError,
     NETCODE_KEY_BYTES
   },
   RenetServerPlugin,
@@ -154,6 +152,6 @@ impl Plugin for ServerPlugin {
     app.add_plugin(RenetServerPlugin);
     app.add_startup_system(create_renet_server);
     app.add_system(panic_on_renet_error_system);
-    app.add_system(handle_incoming_stuff);
+    app.add_system(handle_incoming_stuff.with_run_criteria(run_if_client_conected));
   }
 }
