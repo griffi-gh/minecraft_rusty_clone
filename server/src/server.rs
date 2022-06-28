@@ -19,30 +19,35 @@ use rand::{
   SeedableRng as _,
   Rng as _
 };
+use bincode;
 use std::{
   net::{UdpSocket, SocketAddr}, 
   time::SystemTime,
 };
 use shared::{
-  messages::{
-    ServerMessages, 
-    ServerBlockChannelMessages,
-    ClientMessages
-  },
+  blocks::BlockTypeManager,
+  messages::{ServerMessages, ClientMessages},
   consts::{ PROTOCOL_ID, MAX_CLIENTS },
-  utils::panic_on_renet_error_system
+  utils::panic_on_renet_error_system, types::CompressedChunkData,
 };
-use crate::Args;
+use crate::{
+  worldgen::generate as generate_chunk,
+  Args,
+};
 
-struct PrivateKey([u8; NETCODE_KEY_BYTES]);
+pub struct PrivateKey(pub [u8; NETCODE_KEY_BYTES]);
 
 #[derive(Debug, Default)]
-struct Lobby {
-  players: HashMap<u64, Entity>,
+pub struct Lobby {
+  pub players: HashMap<u64, Entity>,
 }
 
 #[derive(Component, Debug, Clone, Copy)]
-struct Player { id: u64 }
+pub struct Player { pub id: u64 }
+
+const CHANNEL_RELIABLE: u8 = 0;
+const CHANNEL_UNRELIABLE: u8 = 1;
+const CHANNEL_BLOCK: u8 = 2;
 
 fn create_renet_server(
   mut commands: Commands, 
@@ -110,8 +115,34 @@ fn server_update_system(
   }
 }
 
-fn start_http_server() {
-
+fn handle_stuff(
+  mut server: ResMut<RenetServer>,
+  blocks: Res<BlockTypeManager>
+) {
+  for client_id in server.clients_id() {
+    for channel_id in 0..=2 {
+      while let Some(message) = server.receive_message(client_id, channel_id) {
+        if let Ok(message) = bincode::deserialize(&message) {
+          match message {
+            ClientMessages::ChunkRequest {x, y} => {
+              //TODO: async chunk generation
+              server.send_message(
+                client_id, CHANNEL_BLOCK, 
+                bincode::serialize(&ServerMessages::ChunkData { 
+                  data: generate_chunk(x, y, &blocks).into(), 
+                  position: (x, y)
+                }).unwrap()
+              );
+            },
+            ClientMessages::ChatMessage { message } => {
+              warn!("Chat messages are not handled yet");
+            },
+            _ => warn!("Unhandled message type")
+          }
+        }
+      }
+    }
+  }
 }
 
 pub struct ServerPlugin;

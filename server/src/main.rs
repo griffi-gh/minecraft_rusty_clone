@@ -4,7 +4,6 @@ use bevy::{
   log::LogPlugin,
   transform::TransformPlugin,
   hierarchy::HierarchyPlugin,
-  scene::ScenePlugin
 };
 use clap::Parser;
 use std::{
@@ -16,14 +15,15 @@ use shared::{
   blocks::BlockManagerPlugin
 };
 
-mod server;
-mod worldgen;
-mod chat;
+pub(crate) mod server;
+pub(crate) mod http_server;
+pub(crate) mod worldgen;
+//pub(crate) mod chat;
 
 use server::ServerPlugin;
-use worldgen::generate as generate_chunk;
+use http_server::HttpServerPlugin;
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[clap()]
 struct Args {
   #[clap(short, long, value_parser, default_value_t = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)))]
@@ -48,6 +48,7 @@ fn main() {
 
   app.add_plugin(BlockManagerPlugin);
   app.add_plugin(ServerPlugin);
+  app.add_plugin(HttpServerPlugin);
 
   app.run();
 }
