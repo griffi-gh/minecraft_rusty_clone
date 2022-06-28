@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-shared = { path = "../shared" }
+shared = { path = "../shared", features = ["client"] }
 bevy = "0.7"
 bevy_flycam = "0.7"
 bevy_renet = "0.0.3"
@@ -14,4 +14,4 @@ futures-lite = "1.12"
 
 [features]
 default = ["fast-compile"]
-fast-compile = ["bevy/dynamic"]
+fast-compile = ["bevy/dynamic", "shared/fast-compile"]

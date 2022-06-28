@@ -15,4 +15,4 @@ clap = { version = "3.2", features = ["derive"] }
 
 [features]
 default = ["fast-compile"]
-fast-compile = ["bevy/dynamic"]
+fast-compile = ["bevy/dynamic", "shared/fast-compile"]

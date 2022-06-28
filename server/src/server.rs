@@ -29,9 +29,12 @@ use shared::{
     ServerBlockChannelMessages,
     ClientMessages
   },
-  consts::{ PROTOCOL_ID, MAX_CLIENTS }
+  consts::{ PROTOCOL_ID, MAX_CLIENTS },
+  utils::panic_on_renet_error_system
 };
 use crate::Args;
+
+struct PrivateKey([u8; NETCODE_KEY_BYTES]);
 
 #[derive(Debug, Default)]
 struct Lobby {
@@ -41,8 +44,11 @@ struct Lobby {
 #[derive(Component, Debug, Clone, Copy)]
 struct Player { id: u64 }
 
-
-fn create_renet_server(mut commands: Commands, args: Res<Args>) {
+fn create_renet_server(
+  mut commands: Commands, 
+  args: Res<Args>,
+  key: Res<PrivateKey>
+) {
   //Get server address
   let public_addr = SocketAddr::new(args.ip, args.port);
   info!("Server address: {}", public_addr);
@@ -50,13 +56,10 @@ fn create_renet_server(mut commands: Commands, args: Res<Args>) {
   //Bind a udp socket
   let socket = UdpSocket::bind(public_addr).expect("Failed to bind UdpSocket");
   
-  //Generate private key
-  let private_key: [u8; NETCODE_KEY_BYTES] = StdRng::from_entropy().gen();
-
   //Create connection config stuff
   let connection_config = RenetConnectionConfig::default();
   let server_config = ServerConfig::new(
-    MAX_CLIENTS, PROTOCOL_ID, public_addr, private_key
+    MAX_CLIENTS, PROTOCOL_ID, public_addr, key.0
   );
 
   //Get current time
@@ -71,12 +74,6 @@ fn create_renet_server(mut commands: Commands, args: Res<Args>) {
   commands.insert_resource(server);
 
   info!("Server started");
-}
-
-fn panic_on_error_system(mut renet_error: EventReader<RenetError>) {
-  for error in renet_error.iter() {
-    panic!("{}", error);
-  }
 }
 
 fn server_update_system(
@@ -113,12 +110,18 @@ fn server_update_system(
   }
 }
 
+fn start_http_server() {
+
+}
+
 pub struct ServerPlugin;
 impl Plugin for ServerPlugin {
   fn build(&self, app: &mut App) {
+    //Generate private key
     app.init_resource::<Lobby>();
+    app.insert_resource(PrivateKey(StdRng::from_entropy().gen()));
     app.add_plugin(RenetServerPlugin);
     app.add_startup_system(create_renet_server);
-    app.add_system(panic_on_error_system);
+    app.add_system(panic_on_renet_error_system);
   }
 }

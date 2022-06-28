@@ -2,7 +2,9 @@ use bevy::prelude::*;
 use bevy::{
   app::ScheduleRunnerSettings,
   log::LogPlugin,
-  transform::TransformPlugin
+  transform::TransformPlugin,
+  hierarchy::HierarchyPlugin,
+  scene::ScenePlugin
 };
 use clap::Parser;
 use std::{
@@ -39,7 +41,8 @@ fn main() {
   app.add_plugins(MinimalPlugins);
   app.add_plugin(LogPlugin);
   app.add_plugin(TransformPlugin);
-  
+  app.add_plugin(HierarchyPlugin);
+
   app.insert_resource(bevy::tasks::TaskPoolBuilder::new().build());
   app.insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(1./60.)));
 
