@@ -43,12 +43,15 @@ impl From<ChunkLocation> for RequestChunk {
 #[derive(Component)]
 pub struct DecompressTask(Task<Chunk>);
 
-fn new_renet_client(
+fn create_renet_client(
   mut commands: Commands
 ) {
   let server_addr = SocketAddr::new([127,0,0,1].into(), DEFAULT_PORT);
+  let server_addr_no_port = SocketAddr::new(server_addr.ip(), 0);
   let url = format!("{}:{}", server_addr.ip().to_string(), DEFAULT_PORT + 1);
-  let socket = UdpSocket::bind(server_addr).unwrap();
+
+  //Bind socket
+  let socket = UdpSocket::bind(server_addr_no_port).unwrap();
 
   //Create config things
   let connection_config = RenetConnectionConfig::default();
@@ -56,19 +59,21 @@ fn new_renet_client(
   let client_id = current_time.as_millis() as u64;
 
   //Get token
-  let res = reqwest::blocking::get(format!("{}/connect", url)).expect("Failed to get the connection token");
+  let res = reqwest::blocking::get(format!("http://{}/connect", url)).expect("Failed to get the connection token");
   let res_bytes = res.bytes().unwrap();
   let token_bytes = base64::decode(res_bytes).unwrap();
   let token = ConnectToken::read(&mut Cursor::new(&token_bytes)).unwrap();
 
-  RenetClient::new(current_time, socket, client_id, token, connection_config).unwrap();
+  let client = RenetClient::new(current_time, socket, client_id, token, connection_config).unwrap();
+
+  commands.insert_resource(client);
 }
 
 fn handle_incoming_stuff(
   mut commands: Commands,
   mut client: ResMut<RenetClient>,
   pool: Res<AsyncComputeTaskPool>,
-  mut messages: ResMut<ChatMessages>,
+  mut chat: ResMut<ChatMessages>,
 ) {
   for channel_id in 0..=2 {
     while let Some(message) = client.receive_message(channel_id) {
@@ -84,8 +89,8 @@ fn handle_incoming_stuff(
               .insert(position)
               .insert(DecompressTask(task));
           },
-          ServerMessages::ChatMessage { message } => { 
-            messages.0.push(message);
+          ServerMessages::ChatMessage { message: chat_message } => { 
+            chat.0.push(chat_message);
           },
           _ => warn!("Unhandled message type")
         }
@@ -129,6 +134,7 @@ impl Plugin for NetworkingPlugin {
   fn build(&self, app: &mut App) {
     app.add_event::<RequestChunk>();
     app.add_plugin(RenetClientPlugin);
+    app.add_startup_system(create_renet_client);
     app.add_system(request_chunks);
     app.add_system(handle_incoming_stuff);
     app.add_system(apply_decompress_tasks);
