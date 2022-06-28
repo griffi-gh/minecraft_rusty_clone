@@ -26,7 +26,7 @@ use shared::{
   blocks::BlockTypeManager,
   messages::{ServerMessages, ClientMessages},
   consts::{ PROTOCOL_ID, MAX_CLIENTS },
-  utils::panic_on_renet_error_system, types::CompressedChunkData,
+  utils::panic_on_renet_error_system,
 };
 use crate::{
   worldgen::generate as generate_chunk,
@@ -132,7 +132,7 @@ fn handle_incoming_stuff(
                 }).unwrap()
               );
             },
-            ClientMessages::ChatMessage { message } => {
+            ClientMessages::ChatMessage { message: _message } => {
               warn!("Chat messages are not handled yet");
             },
             _ => warn!("Unhandled message type")
@@ -152,6 +152,7 @@ impl Plugin for ServerPlugin {
     app.add_plugin(RenetServerPlugin);
     app.add_startup_system(create_renet_server);
     app.add_system(panic_on_renet_error_system);
+    app.add_system(server_update_system);
     app.add_system(handle_incoming_stuff.with_run_criteria(run_if_client_conected));
   }
 }
