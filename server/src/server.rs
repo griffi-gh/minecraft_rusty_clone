@@ -115,7 +115,7 @@ fn server_update_system(
   }
 }
 
-fn handle_stuff(
+fn handle_incoming_stuff(
   mut server: ResMut<RenetServer>,
   blocks: Res<BlockTypeManager>
 ) {
@@ -154,5 +154,6 @@ impl Plugin for ServerPlugin {
     app.add_plugin(RenetServerPlugin);
     app.add_startup_system(create_renet_server);
     app.add_system(panic_on_renet_error_system);
+    app.add_system(handle_incoming_stuff);
   }
 }
