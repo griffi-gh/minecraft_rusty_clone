@@ -10,10 +10,14 @@ pub const DEFAULT_PORT: u16 = 12478;
 pub const PROTOCOL_ID: u64 = 1;
 pub const MAX_CLIENTS: usize = 64;
 
+pub const CHANNEL_RELIABLE: u8 = 0;
+pub const CHANNEL_UNRELIABLE: u8 = 1;
+pub const CHANNEL_BLOCK: u8 = 2;
+
 //Compatability
 #[deprecated = "Use PROTOCOL_ID instead"]
 pub const PROTOCOL_VERSION: u16 = PROTOCOL_ID as u16;
 #[deprecated = "Use DEFAULT_PORT instead"]
 pub const PORT: u16 = DEFAULT_PORT;
 
-//pub const BANNED_NAMES: [&str; 2] = ["[SYSTEM]", "[SERVER]"];
+//pub const BANNED_NAMES: [&str; 4] = ["[system]", "[server]", "system", "server",];

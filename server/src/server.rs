@@ -25,7 +25,10 @@ use std::{
 use shared::{
   blocks::BlockTypeManager,
   messages::{ServerMessages, ClientMessages},
-  consts::{ PROTOCOL_ID, MAX_CLIENTS },
+  consts::{ 
+    PROTOCOL_ID, MAX_CLIENTS, CHANNEL_BLOCK, 
+    CHANNEL_RELIABLE, CHANNEL_UNRELIABLE 
+  },
   utils::panic_on_renet_error_system,
   types::{ChatMessage}
 };
@@ -43,10 +46,6 @@ pub struct Lobby {
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct Player { pub id: u64 }
-
-const CHANNEL_RELIABLE: u8 = 0;
-const CHANNEL_UNRELIABLE: u8 = 1;
-const CHANNEL_BLOCK: u8 = 2;
 
 fn create_renet_server(
   mut commands: Commands, 
@@ -139,7 +138,7 @@ fn handle_incoming_stuff(
                 bincode::serialize(&ServerMessages::ChatMessage { 
                   message: ChatMessage {
                     message,
-                    from: client_id.to_string(), //TODO use username
+                    from: format!("Client {}", client_id), //TODO use username
                     timestamp: SystemTime::now(),
                     is_system: false
                   }

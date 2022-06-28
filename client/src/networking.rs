@@ -1,192 +1,136 @@
 use bevy::prelude::*;
-use bevy::tasks::{Task, AsyncComputeTaskPool};
-use std::{
-  net::{Ipv4Addr, IpAddr, SocketAddr},
-  ops::Deref
-};
-use shared::{
-  consts::PORT,
-  types::{AuthData, AuthResult},
-  networking::{
-    ChunkDataMessage, 
-    ChunkDataRequestMessage,
-    AuthMessage,
-    AuthResultMessage
+use bevy::tasks::{AsyncComputeTaskPool, Task};
+use bevy_renet::{
+  RenetClientPlugin,
+  renet::{
+    RenetClient,
+    RenetConnectionConfig,
+    ConnectToken
   }
 };
 use futures_lite::future;
-use crate::chunk::{Chunk, ChunkPosition};
-use crate::player::ChunkLocation;
+use bincode;
+use reqwest;
+use base64;
+use std::{
+  time::{SystemTime},
+  net::{SocketAddr, UdpSocket},
+  io::Cursor
+};
+use shared::{
+  messages::{ClientMessages, ServerMessages},
+  consts::{
+    CHANNEL_BLOCK, CHANNEL_RELIABLE, 
+    CHANNEL_UNRELIABLE, DEFAULT_PORT
+  },
+};
+use crate::{
+  chat::ChatMessages,
+  player::ChunkLocation,
+  chunk::{Chunk, ChunkPosition},
+};
 
-//const SPAWN_AREA_SIZE: i64 = 8;
 
-#[derive(Default)]
-pub struct ConnectSuccess;
-
+#[derive(Clone, Copy, Debug)]
 pub struct RequestChunk(i64, i64);
 impl From<ChunkPosition> for RequestChunk {
-  fn from(from: ChunkPosition) -> Self {
-    Self(from.0, from.1)
-  }
+  fn from(from: ChunkPosition) -> Self { Self(from.0, from.1) }
 }
 impl From<ChunkLocation> for RequestChunk {
-  fn from(from: ChunkLocation) -> Self {
-    Self(from.0, from.1)
-  }
-}
-
-pub fn connect(
-  network: ResMut<Network<TcpProvider>>,
-  settings: Res<NetworkSettings>,
-  task_pool: Res<bevy::tasks::TaskPool>,
-) {
-  if network.has_connections() {
-    network.disconnect(ConnectionId { id: 0 })
-      .expect("Couldn't disconnect from server!");
-  } else {
-    info!("Connecting...");
-    network.connect(
-      SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), PORT),
-      task_pool.deref(),
-      &settings,
-    );
-  }
-}
-
-pub fn handle_network_events(
-  mut new_network_events: EventReader<NetworkEvent>,
-  network: Res<Network<TcpProvider>>,
-) {
-  for event in new_network_events.iter() {
-    info!("Received event");
-    match event {
-      NetworkEvent::Connected(_) => {
-        info!("Connected! Authenticating..");
-        
-        network.send_message(
-          ConnectionId { id: 0 }, 
-          AuthMessage(AuthData::from_name("TestPlayer".into()))
-        ).unwrap();
-      }
-      NetworkEvent::Disconnected(_) => {
-        info!("Disconnected!");
-      }
-      NetworkEvent::Error(err) => {
-        error!("Network error: {}", err);
-        panic!();
-      }
-    }
-  }
-}
-
-fn handle_auth_result(
-  mut net_events: EventReader<NetworkData<AuthResultMessage>>,
-  mut ev_connect: EventWriter<ConnectSuccess>,
-  //mut ev_reqest: EventWriter<RequestChunk>,
-) {
-  for event in net_events.iter() {
-    match &event.0 {
-      AuthResult::Ok() => {
-        info!("Auth OK!");
-        ev_connect.send_default();
-        //info!("Spawn area size {0}x{0}; fetching chunks", SPAWN_AREA_SIZE);
-        //for x in 0..SPAWN_AREA_SIZE {
-        //  for y in 0..SPAWN_AREA_SIZE {
-        //    ev_reqest.send(RequestChunk(x, y));
-        //  }
-        //}
-      }
-      AuthResult::Error(error) => {
-        error!("Auth error: {}", error);
-        panic!();
-      }
-    }
-  }
+  fn from(from: ChunkLocation) -> Self { Self(from.0, from.1) }
 }
 
 #[derive(Component)]
 pub struct DecompressTask(Task<Chunk>);
 
-pub fn handle_incoming_chunks (
-  mut commands: Commands,
-  mut new_messages: EventReader<NetworkData<ChunkDataMessage>>,
-  pool: Res<AsyncComputeTaskPool>
+fn new_renet_client(
+  mut commands: Commands
 ) {
-  for new_message in new_messages.iter() {
-    let new_pos = ChunkPosition(new_message.x, new_message.y);
-    info!("Received chunk: {:?}", new_pos);
-    info!("Starting async task");
+  let server_addr = SocketAddr::new([127,0,0,1].into(), DEFAULT_PORT);
+  let url = format!("{}:{}", server_addr.ip().to_string(), DEFAULT_PORT + 1);
+  let socket = UdpSocket::bind(server_addr).unwrap();
 
-    let data = new_message.data.clone();
+  //Create config things
+  let connection_config = RenetConnectionConfig::default();
+  let current_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+  let client_id = current_time.as_millis() as u64;
 
-    let task = pool.spawn(async move {
-      info!("Decompressing chunk {:?}...", new_pos);
-      Chunk((data).into())
-    });
+  //Get token
+  let res = reqwest::blocking::get(format!("{}/connect", url)).expect("Failed to get the connection token");
+  let res_bytes = res.bytes().unwrap();
+  let token_bytes = base64::decode(res_bytes).unwrap();
+  let token = ConnectToken::read(&mut Cursor::new(&token_bytes)).unwrap();
 
-    commands.spawn()
-      .insert(new_pos)
-      .insert(DecompressTask(task));
+  RenetClient::new(current_time, socket, client_id, token, connection_config).unwrap();
+}
+
+fn handle_incoming_stuff(
+  mut commands: Commands,
+  mut client: ResMut<RenetClient>,
+  pool: Res<AsyncComputeTaskPool>,
+  mut messages: ResMut<ChatMessages>,
+) {
+  for channel_id in 0..=2 {
+    while let Some(message) = client.receive_message(channel_id) {
+      if let Ok(message) = bincode::deserialize(&message) {
+        match message {
+          ServerMessages::ChunkData { data, position } => {
+            let position = ChunkPosition(position.0, position.1);
+            info!("Chunk {:?} - Received", position);
+            let task = pool.spawn(async move {
+              Chunk((data).into())
+            });
+            commands.spawn()
+              .insert(position)
+              .insert(DecompressTask(task));
+          },
+          ServerMessages::ChatMessage { message } => { 
+            messages.0.push(message);
+          },
+          _ => warn!("Unhandled message type")
+        }
+      }
+    }
   }
 }
 
 pub fn apply_decompress_tasks(
   mut commands: Commands,
-  mut query: Query<(Entity, &mut DecompressTask), With<ChunkPosition>>,
+  mut query: Query<(Entity, &mut DecompressTask, &ChunkPosition)>,
 ) {
   //TODO Update chunks instead of duplicating!
-  query.for_each_mut(|(entity, mut task)| {
+  query.for_each_mut(|(entity, mut task, position)| {
     if let Some(chunk) = future::block_on(future::poll_once(&mut task.0)) {
       commands.entity(entity)
         .remove::<DecompressTask>()
         .insert(chunk);
-      info!("Chunk ready");
+        info!("Chunk {:?} - Decompressed", position);
     }
   });
 }
 
 pub fn request_chunks(
-  network: Res<Network<TcpProvider>>,
   mut events: EventReader<RequestChunk>,
+  mut client: ResMut<RenetClient>,
 ) {
   for RequestChunk(x, y) in events.iter() {
-    assert!(network.has_connections(), "Not connected yet");
-    info!("Reqesting chunk at coords: {},{}", x, y);
-    match network.send_message(
-      ConnectionId { id: 0 },
-      ChunkDataRequestMessage {
-        x: *x,
-        y: *y
-      },
-    ) {
-      Err(error) => {
-        error!("Communication error: {}", error);
-        panic!();
-      },
-      Ok(_) => {}
-    }
+    info!("Chunk {},{} - Requested", x, y);
+    client.send_message(
+      CHANNEL_RELIABLE, 
+      bincode::serialize(
+        &ClientMessages::ChunkRequest { x: *x, y: *y }
+      ).unwrap()
+    );
   }
 }
 
 pub struct NetworkingPlugin;
 impl Plugin for NetworkingPlugin {
   fn build(&self, app: &mut App) {
-    app.insert_resource(NetworkSettings::default());
-    app.add_plugin(EventworkPlugin::<
-      TcpProvider,
-      bevy::tasks::TaskPool,
-    >::default());
-    register_messages_client(app);
-
-    app.add_event::<ConnectSuccess>();
     app.add_event::<RequestChunk>();
-
-    app.add_startup_system(connect);
-
-    app.add_system(handle_network_events);
-    app.add_system(handle_auth_result);
+    app.add_plugin(RenetClientPlugin);
     app.add_system(request_chunks);
-    app.add_system(handle_incoming_chunks);
+    app.add_system(handle_incoming_stuff);
     app.add_system(apply_decompress_tasks);
   }
 }
