@@ -58,17 +58,17 @@ fn create_renet_client(
   };
 
   //Parse it
-  let (connect_token, client_id, port) = (
+  let (connect_token, client_id) = (
     {
       let token_base64 = conn_data["token"].as_str().expect("No token in response");
       let token_bytes = base64::decode(token_base64).expect("Invalid token Base64");
       ConnectToken::read(&mut Cursor::new(&token_bytes)).unwrap()
     },
     conn_data["client_id"].as_u64().expect("No Client ID in response"),
-    conn_data["port"].as_u64().expect("No port in response") as u16,
+    // conn_data["port"].as_u64().expect("No port in response") as u16,
   );
 
-  let server_addr = SocketAddr::new(server_ip, port);
+  let server_addr = SocketAddr::new(server_ip, 0);
 
   //Bind socket
   let socket = UdpSocket::bind(server_addr).unwrap();

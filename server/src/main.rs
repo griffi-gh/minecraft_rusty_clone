@@ -7,7 +7,7 @@ use bevy::{
 };
 use clap::Parser;
 use std::{
-  net::{IpAddr, Ipv4Addr}, 
+  net::IpAddr, 
   time::Duration,
 };
 use shared::{
@@ -26,7 +26,7 @@ use http_server::HttpServerPlugin;
 #[derive(Parser, Debug, Clone)]
 #[clap()]
 struct Args {
-  #[clap(short, long, value_parser, default_value_t = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)))]
+  #[clap(short, long, value_parser, default_value_t = IpAddr::V4([127,0,0,1].into()))]
   ip: IpAddr,
 
   #[clap(long, value_parser, default_value_t = DEFAULT_PORT)]

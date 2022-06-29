@@ -55,9 +55,13 @@ fn start(
           let client_id = current_time.as_millis() as u64;
           let mut server_addresses = vec![SocketAddr::new(args.ip, args.port_server)];
           if args.ip.is_loopback() || args.ip.is_unspecified() {
-            server_addresses.push(SocketAddr::new([0,0,0,0].into(), args.port_server));
-            server_addresses.push(SocketAddr::new([127,0,0,1].into(), args.port_server));
-            server_addresses.push(SocketAddr::new([0,0,0,0,0,0,0,1].into(), args.port_server));
+            info!("Running on loopback address, allowing connections from localhost");
+            let ipv4_loopback = [127,0,0,1].into();
+            let ipv6_loopback = [0,0,0,0,0,0,0,1].into();
+            server_addresses.push(SocketAddr::new(ipv4_loopback, args.port_server));
+            server_addresses.push(SocketAddr::new(ipv6_loopback, args.port_server));
+            server_addresses.push(SocketAddr::new(ipv4_loopback, 0));
+            server_addresses.push(SocketAddr::new(ipv6_loopback, 0));
           }
           let mut buffer = Vec::new();
           ConnectToken::generate(
