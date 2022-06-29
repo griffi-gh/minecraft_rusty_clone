@@ -125,6 +125,7 @@ fn handle_incoming_stuff(
           match message {
             ClientMessages::ChunkRequest {x, y} => {
               //TODO: async chunk generation
+              info!("Chunk request {} {}", x, y);
               server.send_message(
                 client_id, CHANNEL_BLOCK, 
                 bincode::serialize(&ServerMessages::ChunkData { 

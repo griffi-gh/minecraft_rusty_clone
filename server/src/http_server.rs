@@ -72,13 +72,14 @@ fn start(
       let api = connect.or(root);
 
       let port = args.port_api;
-      info!("API Address: {}", port);
+      info!("API Port: {}", port);
       warp::serve(api)
         .run(SocketAddr::new(args.ip, port))
         .await;
       //=========================================================
     });
   }).detach();
+  info!("detach!");
 }
 
 pub struct HttpServerPlugin;
