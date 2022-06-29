@@ -53,8 +53,12 @@ fn start(
 
           let current_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
           let client_id = current_time.as_millis() as u64;
-          let server_addresses = vec![SocketAddr::new(args.ip, args.port_server)];
-
+          let mut server_addresses = vec![SocketAddr::new(args.ip, args.port_server)];
+          if args.ip.is_loopback() || args.ip.is_unspecified() {
+            server_addresses.push(SocketAddr::new([0,0,0,0].into(), args.port_server));
+            server_addresses.push(SocketAddr::new([127,0,0,1].into(), args.port_server));
+            server_addresses.push(SocketAddr::new([0,0,0,0,0,0,0,1].into(), args.port_server));
+          }
           let mut buffer = Vec::new();
           ConnectToken::generate(
             current_time, PROTOCOL_ID, EXPIRE_SECONDS, client_id, TIMEOUT_SECONDS, 
