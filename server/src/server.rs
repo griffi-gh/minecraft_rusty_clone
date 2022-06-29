@@ -8,8 +8,7 @@ use bevy_renet::{
     ServerEvent, 
     NETCODE_KEY_BYTES
   },
-  RenetServerPlugin,
-  run_if_client_conected
+  RenetServerPlugin
 };
 use rand::{
   rngs::StdRng,
@@ -165,6 +164,6 @@ impl Plugin for ServerPlugin {
     app.add_startup_system(create_renet_server);
     app.add_system(panic_on_renet_error_system);
     app.add_system(server_update_system);
-    app.add_system(handle_incoming_stuff.with_run_criteria(run_if_client_conected));
+    app.add_system(handle_incoming_stuff);
   }
 }

@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy::tasks::{AsyncComputeTaskPool, Task};
 use bevy_renet::{
   RenetClientPlugin,
+  run_if_client_conected,
   renet::{
     RenetClient,
     RenetConnectionConfig,
@@ -151,8 +152,13 @@ impl Plugin for NetworkingPlugin {
     app.add_event::<RequestChunk>();
     app.add_plugin(RenetClientPlugin);
     app.add_startup_system(create_renet_client);
-    app.add_system(request_chunks);
-    app.add_system(handle_incoming_stuff);
-    app.add_system(apply_decompress_tasks);
+    app.add_system_set(
+      SystemSet::new()
+        .label("NetHandler")
+        .with_run_criteria(run_if_client_conected)
+        .with_system(handle_incoming_stuff)
+        .with_system(request_chunks)
+        .with_system(apply_decompress_tasks)
+    );
   }
 }
