@@ -154,5 +154,10 @@ impl Plugin for NetworkingPlugin {
     app.add_system(request_chunks);
     app.add_system(handle_incoming_stuff);
     app.add_system(apply_decompress_tasks);
+    app.add_system(|client: Res<RenetClient>| {
+      if let Some(d) = client.disconnected() {
+        info!("{}", d);
+      }
+    });
   }
 }

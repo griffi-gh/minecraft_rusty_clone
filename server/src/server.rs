@@ -88,7 +88,7 @@ fn server_update_system(
   for event in server_events.iter() {
     match event {
       ServerEvent::ClientConnected(id, _) => {
-        println!("Player {} connected.", id);
+        info!("Player {} connected.", id);
         let player_entity = {
           commands.spawn()
             .insert_bundle(TransformBundle::default())
@@ -103,7 +103,7 @@ fn server_update_system(
         );
       }
       ServerEvent::ClientDisconnected(id) => {
-        println!("Player {} disconnected.", id);
+        info!("Player {} disconnected.", id);
         if let Some(player_entity) = lobby.players.remove(id) {
           commands.entity(player_entity).despawn();
         }

@@ -47,7 +47,7 @@ fn update_loaded_chunks_around_player (
   }
   let player_chunk = player_chunk.single();
 
-  println!("Player moved to chunk {:?}", &player_chunk);
+  info!("Player moved to chunk {:?}", &player_chunk);
 
   //Unload chunks and build HashSet of chunks that are still loaded
   let mut loaded = HashSet::new();
