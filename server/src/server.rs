@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use bevy::utils::HashMap;
+use bevy::{
+  utils::HashMap,
+  tasks::{Task, AsyncComputeTaskPool}
+};
 use bevy_renet::{
   renet::{
     RenetConnectionConfig, 
@@ -10,6 +13,7 @@ use bevy_renet::{
   },
   RenetServerPlugin
 };
+use futures_lite::future;
 use rand::{
   rngs::StdRng,
   //Traits
@@ -113,8 +117,29 @@ fn server_update_system(
   }
 }
 
-fn handle_incoming_stuff(
+#[derive(Component)]
+struct ChunkGenTask{
+  pub task: Task<Vec<u8>>,
+  pub client_id: u64,
+}
+
+fn process_chunk_gen_tasks(
+  mut commands: Commands,
   mut server: ResMut<RenetServer>,
+  mut tasks: Query<(Entity, &mut ChunkGenTask)>
+) {
+  for (entity, mut task) in tasks.iter_mut() {
+    if let Some(message) = future::block_on(future::poll_once(&mut task.task)) {
+      server.send_message(task.client_id, CHANNEL_BLOCK, message);
+      commands.entity(entity).despawn();
+    }; 
+  }
+}
+
+fn handle_incoming_stuff(
+  mut commands: Commands,
+  mut server: ResMut<RenetServer>,
+  pool: Res<AsyncComputeTaskPool>,
   blocks: Res<BlockTypeManager>
 ) {
   for client_id in server.clients_id() {
@@ -123,15 +148,15 @@ fn handle_incoming_stuff(
         if let Ok(message) = bincode::deserialize(&message) {
           match message {
             ClientMessages::ChunkRequest {x, y} => {
-              //TODO: async chunk generation
               info!("Chunk request {} {}", x, y);
-              server.send_message(
-                client_id, CHANNEL_BLOCK, 
+              let blocks_uwu = blocks.clone();
+              let task = pool.spawn(async move {
                 bincode::serialize(&ServerMessages::ChunkData { 
-                  data: generate_chunk(x, y, &blocks).into(), 
+                  data: generate_chunk(x, y, &blocks_uwu).into(), 
                   position: (x, y)
                 }).unwrap()
-              );
+              });
+              commands.spawn().insert(ChunkGenTask{ task, client_id });
             },
             ClientMessages::ChatMessage { message } => {
               server.broadcast_message_except(
@@ -165,5 +190,6 @@ impl Plugin for ServerPlugin {
     app.add_system(panic_on_renet_error_system);
     app.add_system(server_update_system);
     app.add_system(handle_incoming_stuff);
+    app.add_system(process_chunk_gen_tasks);
   }
 }

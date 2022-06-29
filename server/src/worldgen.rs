@@ -1,4 +1,3 @@
-use bevy::prelude::*;
 use shared::{
   blocks::BlockTypeManager,
   types::{ChunkData, Block},
@@ -35,7 +34,7 @@ const EMERALD_ORE_AMOUNT: f64 = 0.025;
 
 const TERRAIN_HEIGHT_HALF: f64 = TERRAIN_HEIGHT / 2.;
 
-pub fn generate(x: i64, y: i64, blocks: &Res<BlockTypeManager>) -> ChunkData {
+pub fn generate(x: i64, y: i64, blocks: &BlockTypeManager) -> ChunkData {
   let index_of = |key| blocks.get_by_key(key).unwrap().index.unwrap() as u16;
 
   let air_index     = index_of("air");

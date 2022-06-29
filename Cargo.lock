@@ -3764,6 +3764,7 @@ dependencies = [
  "bevy_renet",
  "bincode",
  "clap",
+ "futures-lite",
  "noise",
  "rand 0.8.5",
  "serde",

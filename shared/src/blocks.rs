@@ -99,7 +99,7 @@ impl BlockMetadata {
   }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct BlockTypeManager {
   pub block_types: Vec<BlockMetadata>,
   block_map: HashMap<String, usize>,
