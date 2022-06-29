@@ -1133,6 +1133,7 @@ dependencies = [
  "bevy_renet",
  "bincode",
  "futures-lite",
+ "renet_visualizer",
  "reqwest",
  "serde",
  "serde_json",
@@ -3505,6 +3506,16 @@ dependencies = [
  "log",
  "rechannel",
  "renetcode",
+]
+
+[[package]]
+name = "renet_visualizer"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7baaf86bb402881d418c3addc39104c95ec63f2383d76d97a88bc9ffdb600b5"
+dependencies = [
+ "egui",
+ "renet",
 ]
 
 [[package]]

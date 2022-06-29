@@ -9,6 +9,8 @@ use bevy_renet::{
     ConnectToken
   }
 };
+use renet_visualizer::{RenetClientVisualizer, RenetVisualizerStyle};
+use bevy_egui::EguiContext;
 use futures_lite::future;
 use bincode;
 use serde_json::Value as JsonValue;
@@ -146,11 +148,30 @@ pub fn apply_decompress_tasks(
   });
 }
 
+const VIS_T: usize = 200;
+
+fn renet_visualizer_create(
+  mut commands: Commands
+) {
+  commands.insert_resource(RenetClientVisualizer::<VIS_T>::new(RenetVisualizerStyle::default()))
+}
+
+fn renet_visualizer_update(
+  mut egui_context: ResMut<EguiContext>,
+  mut visualizer: ResMut<RenetClientVisualizer::<VIS_T>>,
+  client: Res<RenetClient>
+) {
+  visualizer.add_network_info(client.network_info());
+  visualizer.show_window(egui_context.ctx_mut());
+}
+
 pub struct NetworkingPlugin;
 impl Plugin for NetworkingPlugin {
   fn build(&self, app: &mut App) {
     app.add_event::<RequestChunk>();
+
     app.add_plugin(RenetClientPlugin);
+
     app.add_startup_system(create_renet_client);
     app.add_system_set(
       SystemSet::new()
@@ -160,5 +181,8 @@ impl Plugin for NetworkingPlugin {
         .with_system(request_chunks)
         .with_system(apply_decompress_tasks)
     );
+
+    app.add_startup_system(renet_visualizer_create);
+    app.add_system(renet_visualizer_update);
   }
 }
