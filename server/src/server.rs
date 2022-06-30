@@ -31,7 +31,7 @@ use shared::{
     PROTOCOL_ID, MAX_CLIENTS, CHANNEL_BLOCK, 
     CHANNEL_RELIABLE, CHANNEL_UNRELIABLE 
   },
-  utils::panic_on_renet_error_system,
+  utils::print_on_renet_error_system,
   types::{ChatMessage}
 };
 use crate::{
@@ -48,6 +48,8 @@ pub struct Lobby {
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct Player { pub id: u64 }
+
+pub struct SendSysMessageEvt(pub String);
 
 fn create_renet_server(
   mut commands: Commands, 
@@ -86,6 +88,7 @@ fn server_update_system(
   mut commands: Commands,
   mut lobby: ResMut<Lobby>,
   mut server: ResMut<RenetServer>,
+  mut sys_msg: EventWriter<SendSysMessageEvt>
 ) {
   for event in server_events.iter() {
     match event {
@@ -100,17 +103,25 @@ fn server_update_system(
         lobby.players.insert(*id, player_entity);
         server.broadcast_message_except(
           *id,
-          0, 
+          CHANNEL_RELIABLE, 
           bincode::serialize(&ServerMessages::PlayerConnected { id: *id }).unwrap()
         );
+        sys_msg.send(SendSysMessageEvt(
+          format!("Player {} connected.", &id
+        )));
       }
       ServerEvent::ClientDisconnected(id) => {
         info!("Player {} disconnected.", id);
         if let Some(player_entity) = lobby.players.remove(id) {
           commands.entity(player_entity).despawn();
         }
-        let message = bincode::serialize(&ServerMessages::PlayerDisconnected { id: *id }).unwrap();
-        server.broadcast_message(0, message);
+        server.broadcast_message(
+          CHANNEL_RELIABLE, 
+          bincode::serialize(&ServerMessages::PlayerDisconnected { id: *id }).unwrap()
+        );
+        sys_msg.send(SendSysMessageEvt(
+          format!("Player {} disconnected.", &id)
+        ));
       }
     }
   }
@@ -129,9 +140,29 @@ fn process_chunk_gen_tasks(
 ) {
   for (entity, mut task) in tasks.iter_mut() {
     if let Some(message) = future::block_on(future::poll_once(&mut task.task)) {
-      server.send_message(task.client_id, CHANNEL_BLOCK, message);
+      info!("Chunk size: {} bytes", message.len());
+      server.send_message(task.client_id, CHANNEL_UNRELIABLE, message);
       commands.entity(entity).despawn();
     }; 
+  }
+}
+
+fn send_system_messages(
+  mut events: EventReader<SendSysMessageEvt>,
+  mut server: ResMut<RenetServer>,
+) {
+  for evt in events.iter() {
+    server.broadcast_message(
+      CHANNEL_RELIABLE, 
+      bincode::serialize(&ServerMessages::ChatMessage { 
+        message: ChatMessage {
+          message: evt.0.clone(),
+          from: "[SERVER]".into(),
+          timestamp: SystemTime::now(),
+          is_system: true
+        }
+      }).unwrap()
+    );
   }
 }
 
@@ -182,13 +213,15 @@ pub struct ServerPlugin;
 impl Plugin for ServerPlugin {
   fn build(&self, app: &mut App) {
     //Generate private key
+    app.add_event::<SendSysMessageEvt>();
     app.init_resource::<Lobby>();
     app.insert_resource(PrivateKey(StdRng::from_entropy().gen()));
     app.add_plugin(RenetServerPlugin);
     app.add_startup_system(create_renet_server);
-    app.add_system(panic_on_renet_error_system);
+    app.add_system(print_on_renet_error_system);
     app.add_system(server_update_system);
     app.add_system(handle_incoming_stuff);
     app.add_system(process_chunk_gen_tasks);
+    app.add_system(send_system_messages);
   }
 }

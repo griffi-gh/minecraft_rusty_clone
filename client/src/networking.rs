@@ -43,8 +43,11 @@ impl From<ChunkLocation> for RequestChunk {
   fn from(from: ChunkLocation) -> Self { Self(from.0, from.1) }
 }
 
+#[derive(Clone, Debug)]
+pub struct RequestNetChatSend(pub String);
+
 #[derive(Component)]
-pub struct DecompressTask(Task<Chunk>);
+pub struct DecompressTask(pub Task<Chunk>);
 
 fn create_renet_client(
   mut commands: Commands
@@ -114,6 +117,8 @@ fn handle_incoming_stuff(
   }
 }
 
+//TODO maybe move request_chunks and apply_decompress_tasks?
+
 pub fn request_chunks(
   mut events: EventReader<RequestChunk>,
   mut client: ResMut<RenetClient>,
@@ -125,6 +130,20 @@ pub fn request_chunks(
       CHANNEL_RELIABLE, 
       bincode::serialize(
         &ClientMessages::ChunkRequest { x: *x, y: *y }
+      ).unwrap()
+    );
+  }
+}
+
+pub fn chat_send(
+  mut events: EventReader<RequestNetChatSend>,
+  mut client: ResMut<RenetClient>,
+) {
+  for msg in events.iter() {
+    client.send_message(
+      CHANNEL_RELIABLE, 
+      bincode::serialize(
+        &ClientMessages::ChatMessage{ message: msg.0.clone() }
       ).unwrap()
     );
   }
@@ -165,6 +184,7 @@ fn renet_visualizer_update(
 pub struct NetworkingPlugin;
 impl Plugin for NetworkingPlugin {
   fn build(&self, app: &mut App) {
+    app.add_event::<RequestNetChatSend>();
     app.add_event::<RequestChunk>();
 
     app.add_plugin(RenetClientPlugin);
@@ -176,6 +196,7 @@ impl Plugin for NetworkingPlugin {
         .with_run_criteria(run_if_client_conected)
         .with_system(handle_incoming_stuff)
         .with_system(request_chunks)
+        .with_system(chat_send)
         .with_system(apply_decompress_tasks)
     );
 
