@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 shared = { path = "../shared" }
 bevy = { version = "0.7", default-features = false }
-bevy_renet = "0.0.3"
+bevy_renet = { git = "https://github.com/lucaspoffo/renet", rev = "ca39390" }
 rand = { version = "0.8", features = ["small_rng"] }
 noise = "0.7"
 serde = { version = "1.0", features = ["derive"] }
