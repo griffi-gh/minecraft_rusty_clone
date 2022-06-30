@@ -69,11 +69,9 @@ fn create_renet_client(
     conn_data["client_id"].as_u64().expect("No Client ID in response"),
     // conn_data["port"].as_u64().expect("No port in response") as u16,
   );
-
-  let server_addr = SocketAddr::new(server_ip, 0);
-
+  
   //Bind socket
-  let socket = UdpSocket::bind(server_addr).unwrap();
+  let socket = UdpSocket::bind(SocketAddr::new(server_ip, 0)).unwrap();
 
   //Create config things
   let connection_config = renet_connection_config();
