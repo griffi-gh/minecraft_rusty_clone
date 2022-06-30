@@ -1,8 +1,7 @@
 use crate::consts::{CHUNK_HEIGHT, CHUNK_SIZE};
 use serde::{Serialize, Deserialize};
 use serde_with::serde_as;
-use compress::rle;
-use std::io::{Write, Read};
+use lz4_flex::{compress_prepend_size, decompress_size_prepended};
 use std::time::SystemTime;
 
 #[repr(usize)]
@@ -53,19 +52,14 @@ pub struct CompressedChunkData(pub Vec<u8>);
 impl From<&ChunkData> for CompressedChunkData {
   fn from(chunk_data: &ChunkData) -> Self {
     let data = bincode::serialize(&chunk_data).unwrap();
-    let mut encoder = rle::Encoder::new(Vec::new());
-    encoder.write_all(&data[..]).unwrap();
-    drop(data);
-    Self(encoder.finish().0)
+    let cumpressed = compress_prepend_size(&data[..]);
+    Self(cumpressed)
   }
 }
 impl Into<ChunkData> for &CompressedChunkData {
   fn into(self) -> ChunkData {
-    let mut decoder_buffer = Vec::new();
-    let compressed_data = &self.0[..];
-    rle::Decoder::new(compressed_data)
-      .read_to_end(&mut decoder_buffer).unwrap();
-    bincode::deserialize(&decoder_buffer[..]).unwrap()
+    let decumpressed = decompress_size_prepended(&self.0[..]).unwrap();
+    bincode::deserialize(&decumpressed[..]).unwrap()
   }
 }
 impl From<ChunkData> for CompressedChunkData {

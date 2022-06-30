@@ -5,7 +5,6 @@ use bevy_renet::{
   run_if_client_conected,
   renet::{
     RenetClient,
-    RenetConnectionConfig,
     ConnectToken
   }
 };

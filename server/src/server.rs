@@ -5,7 +5,6 @@ use bevy::{
 };
 use bevy_renet::{
   renet::{
-    RenetConnectionConfig, 
     RenetServer, 
     ServerConfig,
     ServerEvent, 
