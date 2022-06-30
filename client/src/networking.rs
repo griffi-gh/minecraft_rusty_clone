@@ -31,6 +31,7 @@ use crate::{
   chat::ChatMessages,
   player::ChunkLocation,
   chunk::{Chunk, ChunkPosition},
+  player::MainPlayer
 };
 
 
@@ -149,6 +150,13 @@ pub fn chat_send(
   }
 }
 
+pub fn sync_player(
+  mut client: ResMut<RenetClient>,
+  mut player: Query<&GlobalTransform, With<MainPlayer>>
+) {
+  //TODO
+}
+
 pub fn apply_decompress_tasks(
   mut commands: Commands,
   mut query: Query<(Entity, &mut DecompressTask, &ChunkPosition)>,
@@ -198,6 +206,7 @@ impl Plugin for NetworkingPlugin {
         .with_system(request_chunks)
         .with_system(chat_send)
         .with_system(apply_decompress_tasks)
+        .with_system(sync_player)
     );
 
     app.add_startup_system(renet_visualizer_create);
