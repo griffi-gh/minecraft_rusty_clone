@@ -150,12 +150,12 @@ pub fn chat_send(
   }
 }
 
-pub fn sync_player(
-  mut client: ResMut<RenetClient>,
-  mut player: Query<&GlobalTransform, With<MainPlayer>>
-) {
-  //TODO
-}
+// pub fn sync_player(
+//   mut client: ResMut<RenetClient>,
+//   player: Query<&GlobalTransform, With<MainPlayer>>
+// ) {
+//   //TODO
+// }
 
 pub fn apply_decompress_tasks(
   mut commands: Commands,
