@@ -189,6 +189,15 @@ fn renet_visualizer_update(
   visualizer.show_window(egui_context.ctx_mut());
 }
 
+fn disconnect_on_exit_system(
+  exit: EventReader<bevy::app::AppExit>,
+  mut client: ResMut<RenetClient>,
+) {
+  if client.is_connected() && !exit.is_empty() {
+    client.disconnect();
+  }
+}
+
 pub struct NetworkingPlugin;
 impl Plugin for NetworkingPlugin {
   fn build(&self, app: &mut App) {
@@ -208,8 +217,8 @@ impl Plugin for NetworkingPlugin {
         .with_system(apply_decompress_tasks)
         .with_system(sync_player)
     );
-
     app.add_startup_system(renet_visualizer_create);
     app.add_system(renet_visualizer_update);
+    app.add_system(disconnect_on_exit_system);
   }
 }
