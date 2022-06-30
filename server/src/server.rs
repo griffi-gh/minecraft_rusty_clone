@@ -27,7 +27,7 @@ use std::{
 };
 use shared::{
   blocks::BlockTypeManager,
-  messages::{ServerMessages, ClientMessages},
+  messages::{ServerMessages, ClientMessages, renet_connection_config},
   consts::{ 
     PROTOCOL_ID, MAX_CLIENTS, CHANNEL_BLOCK, 
     CHANNEL_RELIABLE, CHANNEL_UNRELIABLE 
@@ -63,7 +63,7 @@ fn create_renet_server(
   let socket = UdpSocket::bind(public_addr).expect("Failed to bind UdpSocket");
   
   //Create connection config stuff
-  let connection_config = RenetConnectionConfig::default();
+  let connection_config = renet_connection_config();
   let server_config = ServerConfig::new(
     MAX_CLIENTS, PROTOCOL_ID, public_addr, key.0
   );

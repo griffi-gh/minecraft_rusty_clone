@@ -22,7 +22,7 @@ use std::{
   io::Cursor
 };
 use shared::{
-  messages::{ClientMessages, ServerMessages},
+  messages::{ClientMessages, ServerMessages, renet_connection_config},
   consts::{
     CHANNEL_BLOCK, CHANNEL_RELIABLE, 
     CHANNEL_UNRELIABLE, DEFAULT_PORT
@@ -77,7 +77,7 @@ fn create_renet_client(
   let socket = UdpSocket::bind(server_addr).unwrap();
 
   //Create config things
-  let connection_config = RenetConnectionConfig::default();
+  let connection_config = renet_connection_config();
   let current_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
 
   let client = RenetClient::new(current_time, socket, client_id, connect_token, connection_config).unwrap();
