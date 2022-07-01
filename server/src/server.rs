@@ -93,7 +93,6 @@ fn create_renet_server(
 }
 
 
-//TODO!!! Server: Separate into multiple systems
 fn server_update_system(
   mut server_events: EventReader<ServerEvent>,
   mut commands: Commands,
@@ -239,6 +238,7 @@ fn send_system_messages(
   }
 }
 
+//TODO!!! Server: Separate into multiple systems
 fn handle_incoming_stuff(
   mut commands: Commands,
   mut server: ResMut<RenetServer>,
@@ -273,6 +273,9 @@ fn handle_incoming_stuff(
                   }
                 }).unwrap()
               );
+            },
+            ClientMessages::PlayerSync { new_pos } => {
+
             },
             _ => warn!("Unhandled message type")
           }

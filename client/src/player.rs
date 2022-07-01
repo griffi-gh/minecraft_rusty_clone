@@ -14,7 +14,7 @@ pub struct Player;
 pub struct ChunkLocation(pub i64, pub i64);
 
 fn update_chunk_location(
-  mut players: Query<(&mut ChunkLocation, &GlobalTransform), (With<Transform>, Changed<GlobalTransform>)>
+  mut players: Query<(&mut ChunkLocation, &GlobalTransform), (With<Transform>, Changed<Transform>)>
 ) {
   for mut player in players.iter_mut() {
     let pos = player.1.translation;
