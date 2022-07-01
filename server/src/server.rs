@@ -28,11 +28,13 @@ use shared::{
   blocks::BlockTypeManager,
   messages::{ServerMessages, ClientMessages, renet_connection_config},
   consts::{ 
-    PROTOCOL_ID, MAX_CLIENTS, CHANNEL_BLOCK, 
-    CHANNEL_RELIABLE, CHANNEL_UNRELIABLE 
+    PROTOCOL_ID, MAX_CLIENTS, CHANNEL_RELIABLE, CHANNEL_UNRELIABLE 
   },
   utils::print_on_renet_error_system,
-  types::{ChatMessage}
+  types::{
+    PlayerInitData,
+    ChatMessage,
+  }
 };
 use crate::{
   worldgen::generate as generate_chunk,
@@ -83,29 +85,64 @@ fn create_renet_server(
   info!("Server started");
 }
 
+
+//TODO!!! Separate into multiple systems
 fn server_update_system(
   mut server_events: EventReader<ServerEvent>,
   mut commands: Commands,
   mut lobby: ResMut<Lobby>,
   mut server: ResMut<RenetServer>,
-  mut sys_msg: EventWriter<SendSysMessageEvt>
+  mut sys_msg: EventWriter<SendSysMessageEvt>,
+  players: Query<(&Player, &GlobalTransform)>
 ) {
   for event in server_events.iter() {
     match event {
       ServerEvent::ClientConnected(id, _) => {
         info!("Player {} connected.", id);
-        let player_entity = {
-          commands.spawn()
-            .insert_bundle(TransformBundle::default())
-            .insert(Player { id: *id })
-            .id()
-        };
+
+        //Spawn Player Entity
+        let plr_transform = Transform::from_xyz(0., 60., 0.);
+        let player_entity = commands.spawn()
+          .insert_bundle(TransformBundle::from_transform(plr_transform))
+          .insert(Player { id: *id })
+          .id();
+        
+        //Insert it into Lobby
         lobby.players.insert(*id, player_entity);
+
+        //Send init data
+        server.send_message(
+          *id, CHANNEL_RELIABLE, 
+          bincode::serialize(&ServerMessages::InitData {
+            self_init: PlayerInitData { position: plr_transform.translation },
+            player_init: {
+              let mut player_init = Vec::new();
+              for (player, transform) in players.iter() {
+                if player.id == *id { continue }
+                player_init.push((
+                  player.id, 
+                  PlayerInitData {
+                    position: transform.translation,
+                  }
+                ));
+              }
+              player_init
+            },
+            chat_messages: Vec::new(), //TODO sync chat
+          }).unwrap()
+        );
+
+        //Send player connected message
         server.broadcast_message_except(
           *id,
           CHANNEL_RELIABLE, 
-          bincode::serialize(&ServerMessages::PlayerConnected { id: *id }).unwrap()
+          bincode::serialize(&ServerMessages::PlayerConnected { 
+            id: *id,
+            init_data: PlayerInitData { position: plr_transform.translation }
+          }).unwrap()
         );
+
+        //Send chat message
         sys_msg.send(SendSysMessageEvt(
           format!("Player {} connected.", &id
         )));

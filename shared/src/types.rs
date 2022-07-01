@@ -1,4 +1,5 @@
 use crate::consts::{CHUNK_HEIGHT, CHUNK_SIZE};
+use bevy::prelude::*;
 use serde::{Serialize, Deserialize};
 use serde_with::serde_as;
 use lz4_flex::{compress_prepend_size, decompress_size_prepended};
@@ -13,6 +14,12 @@ pub enum CubeFace {
   Right  = 3,
   Back   = 4,
   Bottom = 5,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PlayerInitData {
+  pub position: Vec3,
+  //pub username: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]

@@ -3798,7 +3798,9 @@ dependencies = [
  "bevy_renet",
  "bincode",
  "lz4_flex",
+ "once_cell",
  "path-clean",
+ "regex",
  "serde",
  "serde_with",
 ]

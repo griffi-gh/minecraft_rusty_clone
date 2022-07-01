@@ -23,8 +23,7 @@ use std::{
 use shared::{
   messages::{ClientMessages, ServerMessages, renet_connection_config},
   consts::{
-    CHANNEL_BLOCK, CHANNEL_RELIABLE, 
-    CHANNEL_UNRELIABLE, DEFAULT_PORT
+    CHANNEL_RELIABLE, CHANNEL_UNRELIABLE, DEFAULT_PORT
   },
 };
 use crate::{
@@ -152,9 +151,15 @@ pub fn chat_send(
 
 pub fn sync_player(
   mut client: ResMut<RenetClient>,
-  player: Query<&GlobalTransform, With<MainPlayer>>
+  player: Query<&GlobalTransform, (With<MainPlayer>, Changed<GlobalTransform>)>
 ) {
-  //TODO
+  let player = player.single();
+  client.send_message(
+    CHANNEL_UNRELIABLE, 
+    bincode::serialize(&ClientMessages::PlayerSync {
+      new_pos: player.translation
+    }).unwrap()
+  );
 }
 
 pub fn apply_decompress_tasks(
