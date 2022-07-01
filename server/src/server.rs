@@ -275,8 +275,8 @@ fn handle_incoming_stuff(
                 }).unwrap()
               );
             },
-            ClientMessages::PlayerSync { new_pos } => {
-
+            ClientMessages::PlayerSync { _new_pos } => {
+              //TODO ClientMessages::PlayerSync
             },
             _ => warn!("Unhandled message type")
           }
