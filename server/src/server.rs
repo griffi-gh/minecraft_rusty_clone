@@ -86,7 +86,7 @@ fn create_renet_server(
 }
 
 
-//TODO!!! Separate into multiple systems
+//TODO!!! Server: Separate into multiple systems
 fn server_update_system(
   mut server_events: EventReader<ServerEvent>,
   mut commands: Commands,

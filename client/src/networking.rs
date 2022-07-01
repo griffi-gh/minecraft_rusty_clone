@@ -86,6 +86,7 @@ fn create_renet_client(
   info!("Client started");
 }
 
+//TODO!!! Client: Separate into multiple systems
 fn handle_incoming_stuff(
   mut commands: Commands,
   mut client: ResMut<RenetClient>,

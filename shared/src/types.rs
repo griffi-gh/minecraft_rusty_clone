@@ -105,3 +105,8 @@ impl ChatMessage {
     }
   }
 }
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct AuthUserData { 
+  pub username: String
+}

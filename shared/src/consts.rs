@@ -14,6 +14,8 @@ pub const CHANNEL_RELIABLE: u8 = 0;
 pub const CHANNEL_UNRELIABLE: u8 = 1;
 pub const CHANNEL_BLOCK: u8 = 2;
 
+pub const MIN_NAME_LEN: usize = 3;
+pub const MAX_NAME_LEN: usize = 24;
 pub const BANNED_NAMES: &[&str] = &[
   r"\[.*\]",
   r"system", 
