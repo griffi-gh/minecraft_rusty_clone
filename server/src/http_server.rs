@@ -44,7 +44,11 @@ fn connect_reply_error(error: Option<&'static str>) -> ConnectReply {
   warp::reply::with_status(
     warp::reply::json(&json!({
       "success": false,
-      "reason": error.unwrap_or("error") 
+      "reason": format!(
+        "Internal server error {}{}", 
+        if error.is_some() { ": " } else { "" },
+        error.unwrap_or("")
+      )
     })),
     StatusCode::INTERNAL_SERVER_ERROR
   )
@@ -53,7 +57,7 @@ fn connect_reply_validation_fail(error: &'static str) -> ConnectReply {
   warp::reply::with_status(
     warp::reply::json(&json!({
       "success": false,
-      "reason": error
+      "reason": format!("Validation error: {}", error)
     })),
     StatusCode::INTERNAL_SERVER_ERROR
   )
