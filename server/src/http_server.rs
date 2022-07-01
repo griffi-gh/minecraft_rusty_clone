@@ -47,7 +47,7 @@ fn connect_reply_error(error: Option<&'static str>) -> ConnectReply {
       "success": false,
       "code": 500,
       "reason": format!(
-        "Internal server error {}{}", 
+        "Internal server error{}{}", 
         if error.is_some() { ": " } else { "" },
         error.unwrap_or("")
       )
