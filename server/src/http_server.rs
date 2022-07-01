@@ -33,6 +33,7 @@ fn connect_reply_ok(token: String, port: u16, client_id: u64) -> ConnectReply {
   warp::reply::with_status(
     warp::reply::json(&json!({
       "success": true,
+      "code": 200,
       "token": token,
       "port": port,
       "client_id": client_id,
@@ -44,6 +45,7 @@ fn connect_reply_error(error: Option<&'static str>) -> ConnectReply {
   warp::reply::with_status(
     warp::reply::json(&json!({
       "success": false,
+      "code": 500,
       "reason": format!(
         "Internal server error {}{}", 
         if error.is_some() { ": " } else { "" },
@@ -57,9 +59,10 @@ fn connect_reply_validation_fail(error: &'static str) -> ConnectReply {
   warp::reply::with_status(
     warp::reply::json(&json!({
       "success": false,
+      "code": 422,
       "reason": format!("Validation error: {}", error)
     })),
-    StatusCode::INTERNAL_SERVER_ERROR
+    StatusCode::UNPROCESSABLE_ENTITY
   )
 } 
 
