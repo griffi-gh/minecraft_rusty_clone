@@ -7,7 +7,7 @@ use shared::blocks::BlockShape;
 use crate::{
   networking::RequestChunk,
   player::{ChunkLocation, MainPlayer},
-  assets::{AppState, BlockTextureAtlas, BlockTextureIndexMap},
+  assets::{AssetLoaderState, BlockTextureAtlas, BlockTextureIndexMap},
   chunk::{Chunk, ChunkPosition},
   mesh_builder::MeshBuilder
 };
@@ -223,13 +223,13 @@ pub struct WorldPlugin;
 impl Plugin for WorldPlugin {
   fn build(&self, app: &mut App) {
     app.add_system_set(
-      SystemSet::on_update(AppState::Finished)
+      SystemSet::on_update(AssetLoaderState::Finished)
         .label("WorldMain")
         .with_system(mesh_gen_system)
         .with_system(apply_mesh_gen_tasks)
     );
     app.add_system_set(
-      SystemSet::on_update(AppState::Finished)
+      SystemSet::on_update(AssetLoaderState::Finished)
         .after("WorldMain")
         .with_system(update_loaded_chunks_around_player)
     );

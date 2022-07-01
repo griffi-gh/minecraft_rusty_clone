@@ -30,11 +30,15 @@ use shared::{
   consts::{ 
     PROTOCOL_ID, MAX_CLIENTS, CHANNEL_RELIABLE, CHANNEL_UNRELIABLE 
   },
-  utils::print_on_renet_error_system,
+  utils::{
+    print_on_renet_error_system,
+    check_username,
+  },
   types::{
+    AuthUserData,
     PlayerInitData,
     ChatMessage,
-  }
+  },
 };
 use crate::{
   worldgen::generate as generate_chunk,
@@ -50,6 +54,9 @@ pub struct Lobby {
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct Player { pub id: u64 }
+
+#[derive(Component, Debug, Clone)]
+pub struct Username(pub String);
 
 pub struct SendSysMessageEvt(pub String);
 
@@ -93,18 +100,40 @@ fn server_update_system(
   mut lobby: ResMut<Lobby>,
   mut server: ResMut<RenetServer>,
   mut sys_msg: EventWriter<SendSysMessageEvt>,
-  players: Query<(&Player, &GlobalTransform)>
+  players: Query<(&Player, &Username, &GlobalTransform)>
 ) {
-  for event in server_events.iter() {
+  'evt_loop: for event in server_events.iter() {
     match event {
-      ServerEvent::ClientConnected(id, _) => {
-        info!("Player {} connected.", id);
+      ServerEvent::ClientConnected(id, user_data) => {
+        let user_data: AuthUserData = {
+          let end = (user_data[0] + 1) as usize;
+          let slice = &user_data[1..end];
+          match bincode::deserialize::<AuthUserData>(slice) {
+            Err(_) => {
+              warn!("Some asshole tried to send a corrupted user data object");
+              server.disconnect(*id);
+              continue 'evt_loop;
+            },
+            Ok(parsed) => {
+              if !check_username(parsed.username.as_str()) {
+                warn!("Oops username validation failed >:)");
+                server.disconnect(*id);
+                continue 'evt_loop;
+              }
+              parsed
+            }
+          }
+        };
+        let AuthUserData{ username, .. } = user_data;
+
+        info!("Player {} with username {} connected.", id, &username);
 
         //Spawn Player Entity
         let plr_transform = Transform::from_xyz(0., 60., 0.);
         let player_entity = commands.spawn()
           .insert_bundle(TransformBundle::from_transform(plr_transform))
           .insert(Player { id: *id })
+          .insert(Username(username.clone()))
           .id();
         
         //Insert it into Lobby
@@ -114,15 +143,19 @@ fn server_update_system(
         server.send_message(
           *id, CHANNEL_RELIABLE, 
           bincode::serialize(&ServerMessages::InitData {
-            self_init: PlayerInitData { position: plr_transform.translation },
+            self_init: PlayerInitData { 
+              position: plr_transform.translation,
+              username: username.clone()
+            },
             player_init: {
               let mut player_init = Vec::new();
-              for (player, transform) in players.iter() {
+              for (player, name, transform) in players.iter() {
                 if player.id == *id { continue }
                 player_init.push((
                   player.id, 
                   PlayerInitData {
                     position: transform.translation,
+                    username: name.0.clone()
                   }
                 ));
               }
@@ -138,7 +171,10 @@ fn server_update_system(
           CHANNEL_RELIABLE, 
           bincode::serialize(&ServerMessages::PlayerConnected { 
             id: *id,
-            init_data: PlayerInitData { position: plr_transform.translation }
+            init_data: PlayerInitData {
+              position: plr_transform.translation,
+              username: username.clone()
+            }
           }).unwrap()
         );
 

@@ -15,7 +15,7 @@ impl BlockTextureAtlas {
 struct TextureHandles(Vec<HandleUntyped>);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum AppState {
+pub enum AssetLoaderState {
   LoadingAssets,
   CreatingStuff,
   Finished
@@ -30,12 +30,12 @@ fn load_assets(
 }
 
 fn check_assets(
-  mut state: ResMut<State<AppState>>,
+  mut state: ResMut<State<AssetLoaderState>>,
   handles: Res<TextureHandles>,
   server: Res<AssetServer>,
 ) {
   if let LoadState::Loaded = server.get_group_load_state(handles.0.iter().map(|handle| handle.id)) {
-    state.set(AppState::CreatingStuff).unwrap();
+    state.set(AssetLoaderState::CreatingStuff).unwrap();
     info!("Finished loading textures");
   }
 }
@@ -67,7 +67,7 @@ fn create_texture_handle_map(
   atlas: Res<BlockTextureAtlas>,
   blocks: Res<BlockTypeManager>,
   server: Res<AssetServer>,
-  mut state: ResMut<State<AppState>>,
+  mut state: ResMut<State<AssetLoaderState>>,
 ) {
   for block_type in &blocks.block_types {
     for tex in &block_type.textures {
@@ -82,7 +82,7 @@ fn create_texture_handle_map(
       info!("Texture \"{}\" at \"{}\" with atlas index {}", partial, &full, &index);
     }
   }
-  state.set(AppState::Finished).unwrap();
+  state.set(AssetLoaderState::Finished).unwrap();
 }
 
 //fn test() { info!("test") }
@@ -93,9 +93,9 @@ impl Plugin for AssetLoaderPlugin {
     app.init_resource::<TextureHandles>();
     app.init_resource::<BlockTextureIndexMap>();
     app.init_resource::<BlockTextureAtlas>();
-    app.add_state(AppState::LoadingAssets);
-    app.add_system_set(SystemSet::on_enter(AppState::LoadingAssets).with_system(load_assets));
-    app.add_system_set(SystemSet::on_update(AppState::LoadingAssets).with_system(check_assets));
-    app.add_system_set(SystemSet::on_enter(AppState::CreatingStuff).with_system(process_assets.chain(create_texture_handle_map)));
+    app.add_state(AssetLoaderState::LoadingAssets);
+    app.add_system_set(SystemSet::on_enter(AssetLoaderState::LoadingAssets).with_system(load_assets));
+    app.add_system_set(SystemSet::on_update(AssetLoaderState::LoadingAssets).with_system(check_assets));
+    app.add_system_set(SystemSet::on_enter(AssetLoaderState::CreatingStuff).with_system(process_assets.chain(create_texture_handle_map)));
   }
 }

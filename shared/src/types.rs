@@ -19,7 +19,7 @@ pub enum CubeFace {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PlayerInitData {
   pub position: Vec3,
-  //pub username: String,
+  pub username: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]

@@ -57,7 +57,11 @@ fn create_renet_client(
 
   //Get connection data
   let conn_data: JsonValue = {
-    let res = reqwest::blocking::get(format!("{}/connect", api_url)).expect("Failed to get the connection token");
+    let client = reqwest::blocking::Client::new();
+    let res = client.get(format!("{}/connect", api_url))
+      .query(&[("username", "default")])
+      .send()
+      .expect("Failed to get the connection token");
     let res_bytes = &res.bytes().unwrap()[..];
     serde_json::from_slice(res_bytes).unwrap()
   };
@@ -65,6 +69,10 @@ fn create_renet_client(
   //Parse it
   let (connect_token, client_id) = (
     {
+      if !conn_data["success"].as_bool().unwrap_or_default() {
+        error!("Connection failed; {}", conn_data["reason"].as_str().unwrap_or("<no reason>"));
+        return;
+      }
       let token_base64 = conn_data["token"].as_str().expect("No token in response");
       let token_bytes = base64::decode(token_base64).expect("Invalid token Base64");
       ConnectToken::read(&mut Cursor::new(&token_bytes)).unwrap()
