@@ -13,6 +13,7 @@ use bevy_egui::EguiContext;
 use futures_lite::future;
 use serde_json::Value as JsonValue;
 use { bincode, reqwest, base64 };
+use rand::{thread_rng, Rng};
 use std::{
   time::{SystemTime},
   net::{IpAddr, SocketAddr, UdpSocket},
@@ -65,11 +66,13 @@ fn create_renet_client(
   let server_ip: IpAddr = [127,0,0,1].into();
   let api_url = format!("http://{}:{}", server_ip.to_string(), DEFAULT_PORT);
 
+  let username = format!("Guest{}", thread_rng().gen_range(1000..=9999));
+
   //Get connection data
   let conn_data: JsonValue = {
     let client = reqwest::blocking::Client::new();
     let res = client.get(format!("{}/connect", api_url))
-      .query(&[("username", "default")])
+      .query(&[("username", username.as_str())])
       .send()
       .expect("Failed to get the connection token");
     let res_bytes = &res.bytes().unwrap()[..];
