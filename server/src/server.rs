@@ -171,21 +171,29 @@ fn server_update_system(
 
         //Send chat message
         sys_msg.send(SendSysMessageEvt(
-          format!("Player {} (ID {}) connected.", 
-          &username, id
-        )));
+          format!("Player {} connected.", &username)
+        ));
       }
+      
       ServerEvent::ClientDisconnected(id) => {
         info!("Player {} disconnected.", id);
+
+        //Remove the player and get the username
+        let mut username = default();
         if let Some(player_entity) = lobby.players.remove(id) {
+          username = players.get(player_entity).unwrap().1.0.clone();
           commands.entity(player_entity).despawn();
         }
-        server.broadcast_message(
-          CHANNEL_RELIABLE, 
+
+        //Broadcast disconnect message
+        server.broadcast_message_except(
+          *id, CHANNEL_RELIABLE, 
           bincode::serialize(&ServerToClientMessages::PlayerDisconnected { id: *id }).unwrap()
         );
+
+        //Send system chat message
         sys_msg.send(SendSysMessageEvt(
-          format!("Player {} disconnected.", &id)
+          format!("Player {} disconnected.", &username)
         ));
       }
     }
@@ -238,13 +246,14 @@ fn handle_incoming_stuff(
   pool: Res<AsyncComputeTaskPool>,
   blocks: Res<BlockTypeManager>,
   lobby: Res<Lobby>,
-  mut players: Query<&mut Transform, With<Player>>,
+  mut players: Query<(&mut Transform, &Username), With<Player>>,
 ) {
   for client_id in server.clients_id() {
     for channel_id in 0..=2 {
       while let Some(message) = server.receive_message(client_id, channel_id) {
         if let Ok(message) = bincode::deserialize(&message) {
           match message {
+
             ClientToServerMessages::ChunkRequest {x, y} => {
               info!("Chunk request {} {}", x, y);
               let blocks_uwu = blocks.clone();
@@ -256,22 +265,24 @@ fn handle_incoming_stuff(
               });
               commands.spawn().insert(ChunkGenTask{ task, client_id });
             },
+
             ClientToServerMessages::ChatMessage { message } => {
               server.broadcast_message_except(
                 client_id, CHANNEL_RELIABLE, 
                 bincode::serialize(&ServerToClientMessages::ChatMessage { 
                   message: ChatMessage {
                     message,
-                    from: format!("Client {}", client_id), //TODO use username
+                    from: players.get(*lobby.players.get(&client_id).unwrap()).unwrap().1.0.clone(),
                     timestamp: SystemTime::now(),
                     is_system: false
                   }
                 }).unwrap()
               );
             },
+
             ClientToServerMessages::PlayerMove { new_pos } => {
               if let Some(entity) = lobby.players.get(&client_id) {
-                let transform: &mut Transform = &mut players.get_mut(*entity).unwrap();
+                let transform: &mut Transform = &mut players.get_mut(*entity).unwrap().0;
                 transform.translation = new_pos;
                 server.broadcast_message_except(
                   client_id, CHANNEL_UNRELIABLE, 
@@ -281,6 +292,7 @@ fn handle_incoming_stuff(
                 );
               }
             },
+
             _ => warn!("Unhandled message type")
           }
         }
