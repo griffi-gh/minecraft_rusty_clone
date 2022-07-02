@@ -17,9 +17,11 @@ pub const CHANNEL_BLOCK: u8 = 2;
 pub const MIN_NAME_LEN: usize = 3;
 pub const MAX_NAME_LEN: usize = 24;
 pub const BANNED_NAMES: &[&str] = &[
-  r"\[.*\]",
-  r"system", 
-  r"server", 
+  r"[^\x20-\x7E]",      //Ban non-printable/non-ASCII characters
+  r"^\s*$",             //Ban usernames that only contain spaces
+  r"(^\s+)|(\s+$)",     //Ban usernames that start/end with a space
+  r"\[.*\]",            //Ban usernames wrapped in []
+  r"system", r"server", //Ban usernames that can be used to impersonate the server
 ];
 
 //STATIC 
