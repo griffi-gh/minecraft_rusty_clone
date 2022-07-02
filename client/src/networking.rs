@@ -113,9 +113,9 @@ fn handle_incoming_stuff(
   mut client: ResMut<RenetClient>,
   pool: Res<AsyncComputeTaskPool>,
   mut chat: ResMut<ChatMessages>,
-  mut main_plr: Query<(Entity, &mut Transform), With<MainPlayer>>,
+  mut main_plr: Query<(Entity, &mut Transform), (With<MainPlayer>, Without<NetPlayer>)>,
   mut add_net_plr: EventWriter<AddNetPlayer>,
-  mut net_plr_trans: Query<&mut Transform, With<NetPlayer>>,
+  mut net_plr_trans: Query<&mut Transform, (Without<MainPlayer>, With<NetPlayer>)>,
   lobby: ResMut<Lobby>,
 ) {
   if !client.is_connected() { return; }
@@ -157,8 +157,9 @@ fn handle_incoming_stuff(
           },
 
           ServerToClientMessages::PlayerSync { id, new_pos } => {
-            let net_plr_entity = *lobby.players.get(&id).unwrap();
-            net_plr_trans.get_mut(net_plr_entity).unwrap().translation = new_pos;
+            if let Some(net_plr_entity) = lobby.players.get(&id) {
+              net_plr_trans.get_mut(*net_plr_entity).unwrap().translation = new_pos;
+            }
           }
 
           ServerToClientMessages::ChunkData { data, position } => {
@@ -192,7 +193,7 @@ fn add_net_player_event_handler(
   for event in new_players.iter() {
     //TODO add username floaty thing
     assert!(
-      lobby.players.contains_key(&event.client_id), 
+      !lobby.players.contains_key(&event.client_id), 
       "[FUCK] player already added, server must be drunk"
     );
     let entity = commands.spawn()
@@ -297,6 +298,7 @@ impl Plugin for NetworkingPlugin {
   fn build(&self, app: &mut App) {
     app.add_event::<RequestNetChatSend>();
     app.add_event::<RequestChunk>();
+    app.add_event::<AddNetPlayer>();
 
     app.add_plugin(RenetClientPlugin);
 

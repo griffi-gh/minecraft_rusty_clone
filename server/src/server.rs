@@ -171,7 +171,8 @@ fn server_update_system(
 
         //Send chat message
         sys_msg.send(SendSysMessageEvt(
-          format!("Player {} connected.", &id
+          format!("Player {} (ID {}) connected.", 
+          &username, id
         )));
       }
       ServerEvent::ClientDisconnected(id) => {

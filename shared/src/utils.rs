@@ -33,3 +33,7 @@ pub fn check_username(name: &str) -> Result<(), &'static str> {
   }
   Ok(())
 }
+
+pub fn check_chat_message(_msg: &str) -> Result<(), &'static str> {
+  todo!(); //TODO check_chat_message
+}
