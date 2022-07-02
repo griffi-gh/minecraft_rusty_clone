@@ -101,8 +101,8 @@ fn start(
             let name_option = query.get("username");
             match name_option {
               Some(name) => match check_username(name) {
-                true => Ok((name,)),
-                false => Err("Invalid username")
+                Ok(_) => Ok((name,)),
+                Err(reason) => Err(reason)
               }
               None => Err("Missing username")
             }

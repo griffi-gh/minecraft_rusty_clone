@@ -16,20 +16,22 @@ pub const CHANNEL_BLOCK: u8 = 2;
 
 pub const MIN_NAME_LEN: usize = 3;
 pub const MAX_NAME_LEN: usize = 24;
-pub const BANNED_NAMES: &[&str] = &[
-  r"[^\x20-\x7E]",      //Ban non-printable/non-ASCII characters
-  r"^\s*$",             //Ban usernames that only contain spaces
-  r"(^\s+)|(\s+$)",     //Ban usernames that start/end with a space
-  r"\[.*\]",            //Ban usernames wrapped in []
-  r"system", r"server", //Ban usernames that can be used to impersonate the server
+pub const BANNED_NAMES: &[(&str, &str)] = &[
+  (r"[^\x20-\x7E]", "Username contains Non-ASCII characters"),
+  (r"^\s*$", "Empty username"),
+  (r"(^\s+)|(\s+$)", "Usernames can't start/end with spaces"),
+  (r"\[.*\]", "Usernames wrapped in square brackets are not allowed"),
 ];
 
 //STATIC 
 use once_cell::sync::Lazy;
-pub static BANNED_NAMES_PARSED: Lazy<Vec<regex::Regex>> = Lazy::new(|| {
+pub static BANNED_NAMES_PARSED: Lazy<Vec<(regex::Regex, &'static str)>> = Lazy::new(|| {
   let mut regexes = Vec::new();
-  for name in BANNED_NAMES {
-    regexes.push(regex::Regex::new(*name).unwrap());
+  for entry in BANNED_NAMES {
+    regexes.push((
+      regex::Regex::new(entry.0).unwrap(),
+      entry.1
+    ));
   }
   regexes
 });

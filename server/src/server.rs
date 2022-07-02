@@ -115,8 +115,8 @@ fn server_update_system(
               continue 'evt_loop;
             },
             Ok(parsed) => {
-              if !check_username(parsed.username.as_str()) {
-                warn!("Oops username validation failed >:)");
+              if check_username(parsed.username.as_str()).is_err() {
+                warn!("Oops username validation failed");
                 server.disconnect(*id);
                 continue 'evt_loop;
               }
@@ -244,7 +244,9 @@ fn handle_incoming_stuff(
   mut commands: Commands,
   mut server: ResMut<RenetServer>,
   pool: Res<AsyncComputeTaskPool>,
-  blocks: Res<BlockTypeManager>
+  blocks: Res<BlockTypeManager>,
+  lobby: Res<Lobby>,
+  mut players: Query<&mut Transform, With<Player>>,
 ) {
   for client_id in server.clients_id() {
     for channel_id in 0..=2 {
@@ -276,7 +278,10 @@ fn handle_incoming_stuff(
               );
             },
             ClientMessages::PlayerSync { new_pos } => {
-              //TODO ClientMessages::PlayerSync
+              if let Some(entity) = lobby.players.get(&client_id) {
+                let transform: &mut Transform = &mut players.get_mut(*entity).unwrap();
+                transform.translation = new_pos;
+              }
             },
             _ => warn!("Unhandled message type")
           }

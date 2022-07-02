@@ -14,17 +14,22 @@ pub fn print_on_renet_error_system(mut renet_error: EventReader<RenetError>) {
   }
 }
 
-//TODO check_username: return Result instead of bool
-pub fn check_username(name: &str) -> bool {
+//TODO check_username: return an error type instead of String
+pub fn check_username(name: &str) -> Result<(), &'static str> {
   //Check length
   if !(MIN_NAME_LEN..=MAX_NAME_LEN).contains(&name.len()) {
-    return false;
+    return Err(if name.len() < MIN_NAME_LEN {
+      "Username is too short"
+    } else {
+      "Username is too long"
+    });
   } 
   //Check banned regex
-  for regex in BANNED_NAMES_PARSED.iter() {
+  for (regex, reason) in BANNED_NAMES_PARSED.iter() {
     if regex.is_match(name) {
-      return false;
+      //TODO return a better reason
+      return Err(reason);
     }
   }
-  true
+  Ok(())
 }
