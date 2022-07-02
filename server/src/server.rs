@@ -277,7 +277,7 @@ fn handle_incoming_stuff(
                 }).unwrap()
               );
             },
-            ClientMessages::PlayerSync { new_pos } => {
+            ClientMessages::PlayerMove { new_pos } => {
               if let Some(entity) = lobby.players.get(&client_id) {
                 let transform: &mut Transform = &mut players.get_mut(*entity).unwrap();
                 transform.translation = new_pos;

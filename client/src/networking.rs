@@ -165,7 +165,7 @@ pub fn sync_player(
   let player = player.single();
   client.send_message(
     CHANNEL_UNRELIABLE, 
-    bincode::serialize(&ClientMessages::PlayerSync {
+    bincode::serialize(&ClientMessages::PlayerMove {
       new_pos: player.translation
     }).unwrap()
   );
