@@ -11,28 +11,32 @@ use bevy_renet::{
 use renet_visualizer::{RenetClientVisualizer, RenetVisualizerStyle};
 use bevy_egui::EguiContext;
 use futures_lite::future;
-use bincode;
 use serde_json::Value as JsonValue;
-use reqwest;
-use base64;
+use { bincode, reqwest, base64 };
 use std::{
   time::{SystemTime},
   net::{IpAddr, SocketAddr, UdpSocket},
   io::Cursor
 };
 use shared::{
-  messages::{ClientToServerMessages, ServerToClientMessages, renet_connection_config},
+  types::{
+    Lobby, Username, PlayerInitData
+  },
+  messages::{
+    ClientToServerMessages, 
+    ServerToClientMessages, 
+    renet_connection_config
+  },
   consts::{
     CHANNEL_RELIABLE, CHANNEL_UNRELIABLE, DEFAULT_PORT
   },
 };
 use crate::{
   chat::ChatMessages,
-  player::ChunkLocation,
+  player::{ChunkLocation, NetPlayer, Player},
   chunk::{Chunk, ChunkPosition},
   player::MainPlayer
 };
-
 
 #[derive(Clone, Copy, Debug)]
 pub struct RequestChunk(i64, i64);
@@ -45,6 +49,12 @@ impl From<ChunkLocation> for RequestChunk {
 
 #[derive(Clone, Debug)]
 pub struct RequestNetChatSend(pub String);
+
+#[derive(Clone, Debug)]
+pub struct AddNetPlayer{
+  pub client_id: u64,
+  pub init_data: PlayerInitData
+}
 
 #[derive(Component)]
 pub struct DecompressTask(pub Task<Chunk>);
@@ -91,6 +101,9 @@ fn create_renet_client(
   let client = RenetClient::new(current_time, socket, client_id, connect_token, connection_config).unwrap();
   commands.insert_resource(client);
 
+  //Create a lobby resource
+  commands.insert_resource(Lobby::default());
+
   info!("Client started");
 }
 
@@ -100,12 +113,54 @@ fn handle_incoming_stuff(
   mut client: ResMut<RenetClient>,
   pool: Res<AsyncComputeTaskPool>,
   mut chat: ResMut<ChatMessages>,
+  mut main_plr: Query<(Entity, &mut Transform), With<MainPlayer>>,
+  mut add_net_plr: EventWriter<AddNetPlayer>,
+  mut net_plr_trans: Query<&mut Transform, With<NetPlayer>>,
+  lobby: ResMut<Lobby>,
 ) {
   if !client.is_connected() { return; }
+
+  let mut main_plr = main_plr.single_mut();
+  
   for channel_id in 0..=2 {
     while let Some(message) = client.receive_message(channel_id) {
       if let Ok(message) = bincode::deserialize(&message) {
         match message {
+          ServerToClientMessages::PlayerConnected { id, init_data } => {
+            add_net_plr.send(
+              AddNetPlayer { client_id: id, init_data }
+            );
+          }
+
+          ServerToClientMessages::InitData { 
+            self_init, 
+            player_init, 
+            chat_messages 
+          } => {
+            //Apply self_init
+            commands.entity(main_plr.0).insert(Username(self_init.username));
+            main_plr.1.translation = self_init.position;
+
+            //Apply player_init
+            for (client_id, init_data) in player_init {
+              add_net_plr.send(
+                AddNetPlayer { client_id, init_data }
+              );
+            }
+
+            //Apply chat_messages
+            if chat.0.len() > 0 {
+              chat.0.extend_from_slice(&chat_messages[..]);
+            } else {
+              chat.0 = chat_messages;
+            }
+          },
+
+          ServerToClientMessages::PlayerSync { id, new_pos } => {
+            let net_plr_entity = *lobby.players.get(&id).unwrap();
+            net_plr_trans.get_mut(net_plr_entity).unwrap().translation = new_pos;
+          }
+
           ServerToClientMessages::ChunkData { data, position } => {
             let position = ChunkPosition(position.0, position.1);
             info!("Chunk {:?} - Received", position);
@@ -116,6 +171,7 @@ fn handle_incoming_stuff(
               .insert(position)
               .insert(DecompressTask(task));
           },
+
           ServerToClientMessages::ChatMessage { message: chat_message } => { 
             chat.0.push(chat_message);
           },
@@ -126,7 +182,32 @@ fn handle_incoming_stuff(
   }
 }
 
-//TODO maybe move request_chunks and apply_decompress_tasks?
+fn add_net_player_event_handler(
+  mut commands: Commands,
+  mut lobby: ResMut<Lobby>,
+  mut new_players: EventReader<AddNetPlayer>,
+  mut meshes: ResMut<Assets<Mesh>>,
+  mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+  for event in new_players.iter() {
+    //TODO add username floaty thing
+    assert!(
+      lobby.players.contains_key(&event.client_id), 
+      "[FUCK] player already added, server must be drunk"
+    );
+    let entity = commands.spawn()
+      .insert(NetPlayer)
+      .insert(Player)
+      .insert(Username(event.init_data.username.clone()))
+      .insert_bundle(PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+        transform: Transform::from_translation(event.init_data.position),
+        ..default()
+      }).id();
+    lobby.players.insert(event.client_id, entity);
+  }
+}
 
 pub fn request_chunks(
   mut events: EventReader<RequestChunk>,
@@ -187,13 +268,11 @@ pub fn apply_decompress_tasks(
 }
 
 const VIS_T: usize = 200;
-
 fn renet_visualizer_create(
   mut commands: Commands
 ) {
   commands.insert_resource(RenetClientVisualizer::<VIS_T>::new(RenetVisualizerStyle::default()))
 }
-
 fn renet_visualizer_update(
   mut egui_context: ResMut<EguiContext>,
   mut visualizer: ResMut<RenetClientVisualizer::<VIS_T>>,
@@ -202,6 +281,7 @@ fn renet_visualizer_update(
   visualizer.add_network_info(client.network_info());
   visualizer.show_window(egui_context.ctx_mut());
 }
+
 
 fn disconnect_on_exit_system(
   exit: EventReader<bevy::app::AppExit>,
@@ -225,7 +305,10 @@ impl Plugin for NetworkingPlugin {
       SystemSet::new()
         .label("NetHandler")
         .with_run_criteria(run_if_client_conected)
-        .with_system(handle_incoming_stuff)
+        .with_system(
+          handle_incoming_stuff
+            .chain(add_net_player_event_handler)
+        )
         .with_system(request_chunks)
         .with_system(chat_send)
         .with_system(apply_decompress_tasks)

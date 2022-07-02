@@ -6,6 +6,9 @@ use shared::consts::CHUNK_SIZE;
 pub struct MainPlayer;
 
 #[derive(Component, Default)]
+pub struct NetPlayer;
+
+#[derive(Component, Default)]
 pub struct Player;
 
 //TODO ChunkLocation: Rename, the name is too similar to ChunkPosition

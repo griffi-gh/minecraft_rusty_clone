@@ -1,8 +1,5 @@
 use bevy::prelude::*;
-use bevy::{
-  utils::HashMap,
-  tasks::{Task, AsyncComputeTaskPool}
-};
+use bevy::tasks::{Task, AsyncComputeTaskPool};
 use bevy_renet::{
   renet::{
     RenetServer, 
@@ -38,6 +35,8 @@ use shared::{
     AuthUserData,
     PlayerInitData,
     ChatMessage,
+    Lobby,
+    Username
   },
 };
 use crate::{
@@ -47,16 +46,8 @@ use crate::{
 
 pub struct PrivateKey(pub [u8; NETCODE_KEY_BYTES]);
 
-#[derive(Debug, Default)]
-pub struct Lobby {
-  pub players: HashMap<u64, Entity>,
-}
-
 #[derive(Component, Debug, Clone, Copy)]
 pub struct Player { pub id: u64 }
-
-#[derive(Component, Debug, Clone)]
-pub struct Username(pub String);
 
 pub struct SendSysMessageEvt(pub String);
 

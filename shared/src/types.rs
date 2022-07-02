@@ -1,9 +1,9 @@
-use crate::consts::{CHUNK_HEIGHT, CHUNK_SIZE};
 use bevy::prelude::*;
 use serde::{Serialize, Deserialize};
 use serde_with::serde_as;
 use lz4_flex::{compress_prepend_size, decompress_size_prepended};
 use std::time::SystemTime;
+use crate::consts::{CHUNK_HEIGHT, CHUNK_SIZE};
 
 #[repr(usize)]
 #[derive(Clone, Copy)]
@@ -15,6 +15,13 @@ pub enum CubeFace {
   Back   = 4,
   Bottom = 5,
 }
+
+#[derive(Debug, Default)]
+pub struct Lobby {
+  pub players: bevy::utils::HashMap<u64, bevy::prelude::Entity>,
+}
+#[derive(Component, Debug, Clone)]
+pub struct Username(pub String);
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PlayerInitData {
