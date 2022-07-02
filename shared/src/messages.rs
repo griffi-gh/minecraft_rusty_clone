@@ -8,7 +8,7 @@ use crate::types::{
 
 #[derive(Serialize, Deserialize, Clone)]
 #[non_exhaustive]
-pub enum ServerMessages {
+pub enum ServerToClientMessages {
   ChatMessage { message: ChatMessage },
   PlayerConnected {
     id: u64,
@@ -32,7 +32,7 @@ pub enum ServerMessages {
 
 #[derive(Serialize, Deserialize, Clone)]
 #[non_exhaustive]
-pub enum ClientMessages {
+pub enum ClientToServerMessages {
   PlayerMove { new_pos: Vec3 },
   ChatMessage { message: String },
   ChunkRequest { x: i64, y: i64 },

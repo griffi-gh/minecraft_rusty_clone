@@ -21,7 +21,7 @@ use std::{
   io::Cursor
 };
 use shared::{
-  messages::{ClientMessages, ServerMessages, renet_connection_config},
+  messages::{ClientToServerMessages, ServerToClientMessages, renet_connection_config},
   consts::{
     CHANNEL_RELIABLE, CHANNEL_UNRELIABLE, DEFAULT_PORT
   },
@@ -106,7 +106,7 @@ fn handle_incoming_stuff(
     while let Some(message) = client.receive_message(channel_id) {
       if let Ok(message) = bincode::deserialize(&message) {
         match message {
-          ServerMessages::ChunkData { data, position } => {
+          ServerToClientMessages::ChunkData { data, position } => {
             let position = ChunkPosition(position.0, position.1);
             info!("Chunk {:?} - Received", position);
             let task = pool.spawn(async move {
@@ -116,7 +116,7 @@ fn handle_incoming_stuff(
               .insert(position)
               .insert(DecompressTask(task));
           },
-          ServerMessages::ChatMessage { message: chat_message } => { 
+          ServerToClientMessages::ChatMessage { message: chat_message } => { 
             chat.0.push(chat_message);
           },
           _ => warn!("Unhandled message type")
@@ -138,7 +138,7 @@ pub fn request_chunks(
     client.send_message(
       CHANNEL_RELIABLE, 
       bincode::serialize(
-        &ClientMessages::ChunkRequest { x: *x, y: *y }
+        &ClientToServerMessages::ChunkRequest { x: *x, y: *y }
       ).unwrap()
     );
   }
@@ -152,7 +152,7 @@ pub fn chat_send(
     client.send_message(
       CHANNEL_RELIABLE, 
       bincode::serialize(
-        &ClientMessages::ChatMessage{ message: msg.0.clone() }
+        &ClientToServerMessages::ChatMessage{ message: msg.0.clone() }
       ).unwrap()
     );
   }
@@ -165,7 +165,7 @@ pub fn sync_player(
   let player = player.single();
   client.send_message(
     CHANNEL_UNRELIABLE, 
-    bincode::serialize(&ClientMessages::PlayerMove {
+    bincode::serialize(&ClientToServerMessages::PlayerMove {
       new_pos: player.translation
     }).unwrap()
   );

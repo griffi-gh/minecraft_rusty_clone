@@ -26,7 +26,7 @@ use std::{
 };
 use shared::{
   blocks::BlockTypeManager,
-  messages::{ServerMessages, ClientMessages, renet_connection_config},
+  messages::{ServerToClientMessages, ClientToServerMessages, renet_connection_config},
   consts::{ 
     PROTOCOL_ID, MAX_CLIENTS, CHANNEL_RELIABLE, CHANNEL_UNRELIABLE 
   },
@@ -142,7 +142,7 @@ fn server_update_system(
         //Send init data
         server.send_message(
           *id, CHANNEL_RELIABLE, 
-          bincode::serialize(&ServerMessages::InitData {
+          bincode::serialize(&ServerToClientMessages::InitData {
             self_init: PlayerInitData { 
               position: plr_transform.translation,
               username: username.clone()
@@ -169,7 +169,7 @@ fn server_update_system(
         server.broadcast_message_except(
           *id,
           CHANNEL_RELIABLE, 
-          bincode::serialize(&ServerMessages::PlayerConnected { 
+          bincode::serialize(&ServerToClientMessages::PlayerConnected { 
             id: *id,
             init_data: PlayerInitData {
               position: plr_transform.translation,
@@ -190,7 +190,7 @@ fn server_update_system(
         }
         server.broadcast_message(
           CHANNEL_RELIABLE, 
-          bincode::serialize(&ServerMessages::PlayerDisconnected { id: *id }).unwrap()
+          bincode::serialize(&ServerToClientMessages::PlayerDisconnected { id: *id }).unwrap()
         );
         sys_msg.send(SendSysMessageEvt(
           format!("Player {} disconnected.", &id)
@@ -227,7 +227,7 @@ fn send_system_messages(
   for evt in events.iter() {
     server.broadcast_message(
       CHANNEL_RELIABLE, 
-      bincode::serialize(&ServerMessages::ChatMessage { 
+      bincode::serialize(&ServerToClientMessages::ChatMessage { 
         message: ChatMessage {
           message: evt.0.clone(),
           from: "[SERVER]".into(),
@@ -253,21 +253,21 @@ fn handle_incoming_stuff(
       while let Some(message) = server.receive_message(client_id, channel_id) {
         if let Ok(message) = bincode::deserialize(&message) {
           match message {
-            ClientMessages::ChunkRequest {x, y} => {
+            ClientToServerMessages::ChunkRequest {x, y} => {
               info!("Chunk request {} {}", x, y);
               let blocks_uwu = blocks.clone();
               let task = pool.spawn(async move {
-                bincode::serialize(&ServerMessages::ChunkData { 
+                bincode::serialize(&ServerToClientMessages::ChunkData { 
                   data: generate_chunk(x, y, &blocks_uwu).into(), 
                   position: (x, y)
                 }).unwrap()
               });
               commands.spawn().insert(ChunkGenTask{ task, client_id });
             },
-            ClientMessages::ChatMessage { message } => {
+            ClientToServerMessages::ChatMessage { message } => {
               server.broadcast_message_except(
                 client_id, CHANNEL_RELIABLE, 
-                bincode::serialize(&ServerMessages::ChatMessage { 
+                bincode::serialize(&ServerToClientMessages::ChatMessage { 
                   message: ChatMessage {
                     message,
                     from: format!("Client {}", client_id), //TODO use username
@@ -277,10 +277,16 @@ fn handle_incoming_stuff(
                 }).unwrap()
               );
             },
-            ClientMessages::PlayerMove { new_pos } => {
+            ClientToServerMessages::PlayerMove { new_pos } => {
               if let Some(entity) = lobby.players.get(&client_id) {
                 let transform: &mut Transform = &mut players.get_mut(*entity).unwrap();
                 transform.translation = new_pos;
+                server.broadcast_message_except(
+                  client_id, CHANNEL_UNRELIABLE, 
+                  bincode::serialize(&ServerToClientMessages::PlayerSync {
+                    id: client_id, new_pos 
+                  }).unwrap()
+                );
               }
             },
             _ => warn!("Unhandled message type")
