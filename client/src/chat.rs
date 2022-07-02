@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use iyes_loopless::prelude::*;
+
 use bevy_egui::{
   egui::{self, RichText, Color32},
   EguiContext
@@ -6,7 +8,10 @@ use bevy_egui::{
 use std::time::SystemTime;
 use time::{ self, OffsetDateTime };
 use shared::types::ChatMessage;
-use crate::networking::RequestNetChatSend;
+use crate::{
+  GameState,
+  networking::RequestNetChatSend
+};
 
 pub struct ChatMessageEvent(String);
 
@@ -66,12 +71,21 @@ fn chat_send(
   }
 }
 
+fn reset_chat (
+  mut messages: ResMut<ChatMessages>,
+  mut gui_state: ResMut<ChatGuiState>,
+) {
+  messages.0 = Vec::new();
+  *gui_state = default();
+}
+
 pub struct ChatPlugin;
 impl Plugin for ChatPlugin {
   fn build(&self, app: &mut App) {
     app.add_event::<ChatMessageEvent>();
     app.init_resource::<ChatGuiState>();
     app.init_resource::<ChatMessages>();
-    app.add_system(chat_gui.chain(chat_send));
+    app.add_system(chat_gui.chain(chat_send).run_in_state(GameState::InGame));
+    app.add_exit_system(GameState::InGame, reset_chat);
   }
 }

@@ -1,10 +1,13 @@
 use bevy::prelude::*;
+use iyes_loopless::prelude::*;
+
 use bevy::{
   tasks::{Task, AsyncComputeTaskPool},
   utils::HashSet,
 };
 use shared::blocks::BlockShape;
 use crate::{
+  GameState,
   networking::RequestChunk,
   player::{ChunkLocation, MainPlayer},
   assets::{AssetLoaderState, BlockTextureAtlas, BlockTextureIndexMap},
@@ -213,6 +216,15 @@ fn apply_mesh_gen_tasks(
   }
 }
 
+fn despawn_world (
+  mut commands: Commands,
+  chunks: Query<Entity, With<Chunk>>
+) {
+  for chunk in chunks.iter() {
+    commands.entity(chunk).despawn();
+  }
+}
+
 /*struct WorldMap {
   //TODO WorldMap struct
   map: HashMap<ChunkPosition, String>
@@ -223,15 +235,26 @@ pub struct WorldPlugin;
 impl Plugin for WorldPlugin {
   fn build(&self, app: &mut App) {
     app.add_system_set(
-      SystemSet::on_update(AssetLoaderState::Finished)
+      ConditionSet::new()
         .label("WorldMain")
+        .run_in_bevy_state(AssetLoaderState::Finished)
+        .run_in_state(GameState::InGame)
         .with_system(mesh_gen_system)
         .with_system(apply_mesh_gen_tasks)
+        .into()
     );
     app.add_system_set(
-      SystemSet::on_update(AssetLoaderState::Finished)
+      ConditionSet::new()
+        .label("AfterWorldMain")
         .after("WorldMain")
+        .run_in_bevy_state(AssetLoaderState::Finished)
+        .run_in_state(GameState::InGame)
         .with_system(update_loaded_chunks_around_player)
+        .into()
+    );
+    app.add_exit_system(
+      GameState::InGame, 
+      despawn_world
     );
   }
 }

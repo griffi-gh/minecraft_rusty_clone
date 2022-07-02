@@ -1,8 +1,9 @@
 use bevy::prelude::*;
+use iyes_loopless::prelude::*;
+
 use bevy::tasks::{AsyncComputeTaskPool, Task};
 use bevy_renet::{
   RenetClientPlugin,
-  run_if_client_conected,
   renet::{
     RenetClient,
     ConnectToken
@@ -33,6 +34,7 @@ use shared::{
   },
 };
 use crate::{
+  GameState,
   chat::ChatMessages,
   player::{ChunkLocation, NetPlayer, Player},
   chunk::{Chunk, ChunkPosition},
@@ -59,6 +61,13 @@ pub struct AddNetPlayer{
 
 #[derive(Component)]
 pub struct DecompressTask(pub Task<Chunk>);
+
+fn run_if_client_conected(client: Option<Res<RenetClient>>) -> bool {
+  if let Some(client) = client {
+    return client.is_connected();
+  }
+  false
+}
 
 fn create_renet_client(
   mut commands: Commands
@@ -108,6 +117,17 @@ fn create_renet_client(
   commands.insert_resource(Lobby::default());
 
   info!("Client started");
+}
+
+fn update_state_to_ingame(
+  mut commands: Commands,
+  client: Res<RenetClient>
+) {
+  if client.is_connected() {
+    commands.insert_resource(NextState(GameState::InGame));
+  } else if client.disconnected().is_some() {
+    commands.insert_resource(NextState(GameState::MainMenu));
+  }
 }
 
 //TODO!!! Client: Separate into multiple systems
@@ -279,13 +299,27 @@ fn renet_visualizer_create(
 }
 fn renet_visualizer_update(
   mut egui_context: ResMut<EguiContext>,
-  mut visualizer: ResMut<RenetClientVisualizer::<VIS_T>>,
+  visualizer: Option<ResMut<RenetClientVisualizer<VIS_T>>>,
   client: Res<RenetClient>
 ) {
-  visualizer.add_network_info(client.network_info());
-  visualizer.show_window(egui_context.ctx_mut());
+  if visualizer.is_some() {
+    let mut visualizer = visualizer.unwrap();
+    visualizer.add_network_info(client.network_info());
+    visualizer.show_window(egui_context.ctx_mut());
+  }
 }
 
+fn disconnect(
+  mut commands: Commands,
+  mut client: ResMut<RenetClient>
+) {
+  if client.is_connected() {  
+    client.disconnect();
+  }
+  commands.remove_resource::<Lobby>();
+  commands.remove_resource::<RenetClient>();
+  commands.remove_resource::<RenetClientVisualizer<VIS_T>>();
+}
 
 fn disconnect_on_exit_system(
   exit: EventReader<bevy::app::AppExit>,
@@ -305,11 +339,25 @@ impl Plugin for NetworkingPlugin {
 
     app.add_plugin(RenetClientPlugin);
 
-    app.add_startup_system(create_renet_client);
-    app.add_system_set(
+    app.add_enter_system_set(
+      GameState::Connecting,
       SystemSet::new()
-        .label("NetHandler")
-        .with_run_criteria(run_if_client_conected)
+        .with_system(create_renet_client)
+        .with_system(renet_visualizer_create)
+    );
+
+    app.add_system_set(
+      ConditionSet::new()
+        .run_in_state(GameState::Connecting)
+        .with_system(update_state_to_ingame)
+        .into()
+    );
+
+    app.add_system_set(
+      ConditionSet::new()
+        .label("NetLoop")
+        .run_in_state(GameState::InGame)
+        .run_if(run_if_client_conected)
         .with_system(
           handle_incoming_stuff
             .chain(add_net_player_event_handler)
@@ -318,9 +366,11 @@ impl Plugin for NetworkingPlugin {
         .with_system(chat_send)
         .with_system(apply_decompress_tasks)
         .with_system(sync_player)
+        .into()
     );
-    app.add_startup_system(renet_visualizer_create);
+
     app.add_system(renet_visualizer_update);
     app.add_system(disconnect_on_exit_system);
+    app.add_exit_system(GameState::InGame, disconnect);
   }
 }

@@ -2,21 +2,29 @@ use bevy::prelude::*;
 use bevy::tasks::TaskPoolBuilder;
 use bevy_egui::EguiPlugin;
 
+use iyes_loopless::prelude::AppLooplessStateExt;
 use shared::blocks::BlockManagerPlugin;
 
-mod mesh_builder;
-mod chunk;
-mod world;
-mod networking;
-mod assets;
-mod player;
-mod chat;
+pub(crate) mod mesh_builder;
+pub(crate) mod chunk;
+pub(crate) mod world;
+pub(crate) mod networking;
+pub(crate) mod assets;
+pub(crate) mod player;
+pub(crate) mod chat;
 
 use networking::NetworkingPlugin;
 use world::WorldPlugin;
 use assets::AssetLoaderPlugin;
 use player::PlayerPlugin;
 use chat::ChatPlugin;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) enum GameState {
+  MainMenu,
+  Connecting,
+  InGame
+}
 
 fn main() {
   let mut app = App::new();
@@ -38,6 +46,8 @@ fn main() {
     color: Color::WHITE,
     brightness: 1.0,
   });
+
+  app.add_loopless_state(GameState::MainMenu);
 
   app.add_plugin(BlockManagerPlugin);
   app.add_plugin(PlayerPlugin);

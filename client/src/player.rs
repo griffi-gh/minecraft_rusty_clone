@@ -1,6 +1,9 @@
-use bevy::{prelude::*};
+use bevy::prelude::*;
+use iyes_loopless::prelude::*;
+
 use bevy_flycam::PlayerPlugin as FlyCamPlugin;
 use shared::consts::CHUNK_SIZE;
+use crate::GameState;
 
 #[derive(Component, Default)]
 pub struct MainPlayer;
@@ -32,6 +35,15 @@ fn update_chunk_location(
   }
 }
 
+fn despawn_players (
+  mut commands: Commands,
+  players: Query<Entity, With<NetPlayer>>
+) {
+  for player in players.iter() {
+    commands.entity(player).despawn();
+  }
+}
+
 fn setup(
   mut commands: Commands, 
   fly: Query<Entity, (With<bevy_flycam::FlyCam>, Without<Player>)>
@@ -47,7 +59,8 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
   fn build(&self, app: &mut App) {
     app.add_plugin(FlyCamPlugin);
-    app.add_system(setup); //TODO convert to startup system
     app.add_system(update_chunk_location);
+    app.add_system(setup.run_in_state(GameState::InGame));
+    app.add_exit_system(GameState::InGame, despawn_players);
   }
 }
