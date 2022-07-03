@@ -25,6 +25,8 @@ fn main_menu_gui(
 ) {
   egui::Window::new("Main menu")
     .collapsible(false)
+    .resizable(false)
+    .title_bar(false)
     .default_width(300.)
     .anchor(Align2::CENTER_CENTER, EVec2::ZERO)
     .show(egui_context.ctx_mut(), |ui| {
@@ -33,10 +35,10 @@ fn main_menu_gui(
         //Stuff
         match gui_state.screen {
           MainMenuScreen::Main => {
-            if ui.button("Play").clicked() {
+            if ui.button("\nPlay\n").clicked() {
               gui_state.screen = MainMenuScreen::Connect;
             }
-            if ui.button("Exit").clicked() {
+            if ui.button("\nExit\n").clicked() {
               exit.send_default();
             }
           },
