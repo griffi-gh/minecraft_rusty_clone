@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
-use bevy_flycam::PlayerPlugin as FlyCamPlugin;
+use bevy_flycam::{FlyCam, NoCameraPlayerPlugin as FlyCamPlugin};
 use shared::consts::CHUNK_SIZE;
 use crate::GameState;
 
@@ -35,16 +35,8 @@ fn update_chunk_location(
   }
 }
 
-fn despawn_players (
-  mut commands: Commands,
-  players: Query<Entity, With<NetPlayer>>
-) {
-  for player in players.iter() {
-    commands.entity(player).despawn();
-  }
-}
 
-fn setup(
+fn setup_old(
   mut commands: Commands, 
   fly: Query<Entity, (With<bevy_flycam::FlyCam>, Without<Player>)>
 ) {
@@ -55,12 +47,32 @@ fn setup(
     .insert(ChunkLocation::default());
 }
 
+
+fn setup(
+  mut commands: Commands, 
+) {
+  commands
+    .spawn_bundle(PerspectiveCameraBundle::default())
+    .insert(FlyCam)
+    .insert(Player)
+    .insert(MainPlayer)
+    .insert(ChunkLocation::default());
+}
+fn on_exit (
+  mut commands: Commands,
+  players: Query<Entity, With<Player>>
+) {
+  for player in players.iter() {
+    commands.entity(player).despawn();
+  }
+}
+
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
   fn build(&self, app: &mut App) {
     app.add_plugin(FlyCamPlugin);
     app.add_system(update_chunk_location);
-    app.add_system(setup.run_in_state(GameState::InGame));
-    app.add_exit_system(GameState::InGame, despawn_players);
+    app.add_enter_system(GameState::InGame, setup);
+    app.add_exit_system(GameState::InGame, on_exit);
   }
 }

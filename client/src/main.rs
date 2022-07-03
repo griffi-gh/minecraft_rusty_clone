@@ -12,12 +12,14 @@ pub(crate) mod networking;
 pub(crate) mod assets;
 pub(crate) mod player;
 pub(crate) mod chat;
+pub(crate) mod main_menu;
 
 use networking::NetworkingPlugin;
 use world::WorldPlugin;
 use assets::AssetLoaderPlugin;
 use player::PlayerPlugin;
 use chat::ChatPlugin;
+use main_menu::MainMenuPlugin;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum GameState {
@@ -55,6 +57,7 @@ fn main() {
   app.add_plugin(NetworkingPlugin);
   app.add_plugin(WorldPlugin);
   app.add_plugin(ChatPlugin);
+  app.add_plugin(MainMenuPlugin);
   
   app.run();
 }

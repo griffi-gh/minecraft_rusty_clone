@@ -19,7 +19,7 @@ pub struct ChatMessageEvent(String);
 pub struct ChatMessages(pub Vec<ChatMessage>);
 
 #[derive(Default)]
-pub struct ChatGuiState {
+struct ChatGuiState {
   pub chat_message: String,
 }
 

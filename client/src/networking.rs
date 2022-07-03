@@ -300,10 +300,13 @@ fn renet_visualizer_create(
 fn renet_visualizer_update(
   mut egui_context: ResMut<EguiContext>,
   visualizer: Option<ResMut<RenetClientVisualizer<VIS_T>>>,
-  client: Res<RenetClient>
+  client: Option<Res<RenetClient>>
 ) {
-  if visualizer.is_some() {
-    let mut visualizer = visualizer.unwrap();
+  if client.is_some() && visualizer.is_some() {
+    let (
+      mut visualizer, 
+      client
+    ) = (visualizer.unwrap(), client.unwrap());
     visualizer.add_network_info(client.network_info());
     visualizer.show_window(egui_context.ctx_mut());
   }
@@ -369,8 +372,15 @@ impl Plugin for NetworkingPlugin {
         .into()
     );
 
-    app.add_system(renet_visualizer_update);
-    app.add_system(disconnect_on_exit_system);
+    app.add_system_set(
+      ConditionSet::new()
+        .run_if(run_if_client_conected)
+        .with_system(disconnect_on_exit_system)
+        .with_system(renet_visualizer_update)
+        .into()
+    );
+    
     app.add_exit_system(GameState::InGame, disconnect);
+
   }
 }
