@@ -1,9 +1,11 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
-
 use bevy_flycam::{FlyCam, NoCameraPlayerPlugin as FlyCamPlugin};
 use shared::consts::CHUNK_SIZE;
 use crate::GameState;
+
+mod camera;
+//use camera::{CameraPlugin, Camera as PlayerCam};
 
 #[derive(Component, Default)]
 pub struct MainPlayer;

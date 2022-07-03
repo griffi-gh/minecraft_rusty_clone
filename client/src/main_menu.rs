@@ -10,7 +10,7 @@ struct MainMenuGuiState {}
 fn main_menu_gui(
   mut commands: Commands,
   mut egui_context: ResMut<EguiContext>,
-  mut gui_state: ResMut<MainMenuGuiState>,
+  //mut gui_state: ResMut<MainMenuGuiState>,
   mut exit: EventWriter<bevy::app::AppExit>
 ) {
   egui::Window::new("Main menu").show(egui_context.ctx_mut(), |ui| {
