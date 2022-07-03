@@ -35,19 +35,6 @@ fn update_chunk_location(
   }
 }
 
-
-fn setup_old(
-  mut commands: Commands, 
-  fly: Query<Entity, (With<bevy_flycam::FlyCam>, Without<Player>)>
-) {
-  if fly.is_empty() { return; }
-  commands.entity(fly.single())
-    .insert(Player)
-    .insert(MainPlayer)
-    .insert(ChunkLocation::default());
-}
-
-
 fn setup(
   mut commands: Commands, 
 ) {
