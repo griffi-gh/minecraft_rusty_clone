@@ -83,7 +83,7 @@ fn start(
           "name": "Game Server",
           "description": "no description",
           "icon": null,
-          "password_protected": true,
+          "password_protected": false,
           "protocol_id": PROTOCOL_ID,
         }))
       });
