@@ -34,6 +34,14 @@ pub fn check_username(name: &str) -> Result<(), &'static str> {
   Ok(())
 }
 
+//TODO improve this
+pub fn check_password(pwd: &str) -> Result<(), &'static str> {
+  match (pwd.len() >= 6) && (pwd.len() <= 128) {
+    true => Ok(()),
+    false => Err("invalid password"),
+  }
+}
+
 pub fn check_chat_message(_msg: &str) -> Result<(), &'static str> {
   todo!(); //TODO check_chat_message
 }

@@ -1,7 +1,13 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
-
-use bevy_egui::{egui::{self, Align2, Vec2 as EVec2}, EguiContext};
+use bevy_egui::{
+  egui::{self, Align2, Vec2 as EVec2, Color32}, 
+  EguiContext
+};
+use reqwest;
+use serde_json::Value as JsonValue;
+use std::net::{SocketAddr, IpAddr};
+use shared::utils::{check_username, check_password};
 use crate::GameState;
 
 #[derive(Default, PartialEq)]
@@ -14,7 +20,10 @@ enum MainMenuScreen {
 
 #[derive(Default)]
 struct MainMenuGuiState {
-  screen: MainMenuScreen
+  screen: MainMenuScreen,
+  server_addr: String,
+  username: String,
+  password: Option<String>,
 }
 
 fn main_menu_gui(
@@ -43,7 +52,69 @@ fn main_menu_gui(
             }
           },
           MainMenuScreen::Connect => {
-            if ui.button("[DEBUG]\nConnect to localhost").clicked() {
+
+            let mut form_valid = true;
+
+            { //USERNAME INPUT BOX
+              let valid = check_username(gui_state.username.as_str());
+              form_valid &= valid.is_ok();
+              ui.add(
+                egui::TextEdit::singleline(&mut gui_state.username)
+                  .text_color(if valid.is_ok() { Color32::LIGHT_GREEN } else { Color32::LIGHT_RED })
+                  .hint_text("Username")
+              );
+            }
+
+            ui.add_enabled_ui(gui_state.password.is_none(), |ui| {
+              //SERVER IP INPUT BOX
+              let is_valid = 
+                gui_state.server_addr.parse::<SocketAddr>().is_ok() ||
+                gui_state.server_addr.parse::<IpAddr>().is_ok();
+              form_valid &= is_valid;
+              ui.add(
+                egui::TextEdit::singleline(&mut gui_state.server_addr)
+                  .text_color(if is_valid { Color32::LIGHT_GREEN } else { Color32::LIGHT_RED })
+                  .hint_text("Server address")
+              );
+            });
+            
+
+            //PASSWORD INPUT BOX
+            if let Some(password) = gui_state.password.as_mut() {
+              ui.separator();
+              ui.label("This server is password-protected");
+              let pwd_valid = check_password(password.as_str()).is_ok();
+              form_valid &= pwd_valid;
+              ui.add(
+                egui::TextEdit::singleline(password)
+                  .password(true)
+                  .text_color(if pwd_valid { Color32::LIGHT_GREEN } else { Color32::LIGHT_RED })
+                  .hint_text("Enter the server password")
+              );
+              ui.separator();
+            }
+
+            ui.add_enabled_ui(form_valid, |ui| {
+              if ui.button("Connect").clicked() {
+                let mut proceed = true;
+                if gui_state.password.is_none() {
+                  if let Ok(res) = reqwest::blocking::get(format!("http://{}/", gui_state.server_addr)) {
+                    if let Ok(json_val) = res.json::<JsonValue>() {
+                      let has_pwd = json_val["password_protected"].as_bool().unwrap_or_default();
+                      if has_pwd {
+                        gui_state.password = Some(String::new());
+                        proceed = false;
+                      }
+                    } else { proceed = false }
+                  } else { proceed = false }
+                }
+                if proceed {
+                  commands.insert_resource(NextState(GameState::Connecting));
+                }
+              }
+            });
+
+            if ui.button("[DEBUG] Connect to localhost").clicked() {
               commands.insert_resource(NextState(GameState::Connecting));
             }
           }
@@ -51,11 +122,11 @@ fn main_menu_gui(
 
         //Back button
         if gui_state.screen != MainMenuScreen::Main {
+          ui.separator();
           if ui.button("<= Back").clicked() {
-            gui_state.screen = MainMenuScreen::Main;
+            *gui_state = default();
           }
         }
-
       });
     });
 }
