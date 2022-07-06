@@ -6,7 +6,6 @@ use iyes_loopless::prelude::AppLooplessStateExt;
 use shared::blocks::BlockManagerPlugin;
 
 pub(crate) mod mesh_builder;
-pub(crate) mod chunk;
 pub(crate) mod world;
 pub(crate) mod networking;
 pub(crate) mod assets;

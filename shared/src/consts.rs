@@ -24,14 +24,46 @@ pub const BANNED_NAMES: &[(&str, &str)] = &[
 ];
 
 //STATIC 
-use once_cell::sync::Lazy;
-pub static BANNED_NAMES_PARSED: Lazy<Vec<(regex::Regex, &'static str)>> = Lazy::new(|| {
-  let mut regexes = Vec::new();
-  for entry in BANNED_NAMES {
-    regexes.push((
-      regex::Regex::new(entry.0).unwrap(),
-      entry.1
-    ));
+mod static_stuff {
+  use super::*;
+  use once_cell::sync::Lazy;
+  use regex::Regex;
+  use bevy_renet::renet::{
+    RenetConnectionConfig, ChannelConfig,
+    ReliableChannelConfig, BlockChannelConfig,
+    UnreliableChannelConfig, 
+  };
+
+  pub static BANNED_NAMES_PARSED: Lazy<Vec<(Regex, &'static str)>> = Lazy::new(|| {
+    let mut regexes = Vec::new();
+    for entry in BANNED_NAMES {
+      regexes.push((
+        Regex::new(entry.0).unwrap(),
+        entry.1
+      ));
+    }
+    regexes
+  });
+
+  #[allow(non_snake_case)]
+  #[inline(always)]
+  pub fn CONNECTION_CONFIG() -> RenetConnectionConfig {
+    RenetConnectionConfig {
+      max_packet_size: 128 * 1024,
+      channels_config: vec![
+        ChannelConfig::Reliable(ReliableChannelConfig {
+          packet_budget: u64::MAX,
+          ..Default::default()
+        }),
+        ChannelConfig::Unreliable(UnreliableChannelConfig {
+          max_message_size: u64::MAX,
+          packet_budget: u64::MAX,
+          ..Default::default()
+        }),
+        ChannelConfig::Block(BlockChannelConfig::default()),
+      ],
+      ..Default::default()
+    }
   }
-  regexes
-});
+}
+pub use static_stuff::*;

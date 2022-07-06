@@ -21,7 +21,7 @@ use crate::{
 };
 use shared::{
   consts::PROTOCOL_ID,
-  types::AuthUserData,
+  types::net::AuthUserData,
   utils::check_username,
 };
 

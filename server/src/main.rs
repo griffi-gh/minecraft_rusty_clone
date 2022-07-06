@@ -18,7 +18,6 @@ use shared::{
 pub(crate) mod server;
 pub(crate) mod http_server;
 pub(crate) mod worldgen;
-//pub(crate) mod chat;
 
 use server::ServerPlugin;
 use http_server::HttpServerPlugin;

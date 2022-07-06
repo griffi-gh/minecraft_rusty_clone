@@ -1,6 +1,6 @@
 use shared::{
   blocks::BlockTypeManager,
-  types::{ChunkData, Block},
+  types::{chunk::ChunkData, block::Block},
   consts::{CHUNK_SIZE, CHUNK_HEIGHT}
 };
 use noise::{Fbm, NoiseFn};
@@ -22,13 +22,13 @@ const MAX_BEDROCK_HEIGHT: usize = 3;
 
 const PRNG_SEED: u64            = 0x0DDB1A5E5BAD5EED;
 
-const ORE_NOISE_SCALE: f64    = 0.133;
-const ORE_OCTAVES: usize      = 1;
-const DIAMOND_ORE_AMOUNT: f64 = 0.05;
-const COAL_ORE_AMOUNT: f64    = 0.2;
-const IRON_ORE_AMOUNT: f64    = 0.1;
-const GOLD_ORE_AMOUNT: f64    = 0.075;
-const EMERALD_ORE_AMOUNT: f64 = 0.025;
+const ORE_NOISE_SCALE: f64      = 0.133;
+const ORE_OCTAVES: usize        = 1;
+const DIAMOND_ORE_AMOUNT: f64   = 0.05;
+const COAL_ORE_AMOUNT: f64      = 0.2;
+const IRON_ORE_AMOUNT: f64      = 0.1;
+const GOLD_ORE_AMOUNT: f64      = 0.075;
+const EMERALD_ORE_AMOUNT: f64   = 0.025;
 
 //========================================
 

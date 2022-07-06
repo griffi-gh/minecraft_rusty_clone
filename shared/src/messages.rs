@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 use bevy::prelude::Vec3;
 use crate::types::{
-  CompressedChunkData,
-  ChatMessage,
-  PlayerInitData
+  chunk::CompressedChunkData,
+  chat::ChatMessage,
+  player::PlayerInitData
 };
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -38,29 +38,8 @@ pub enum ClientToServerMessages {
   ChunkRequest { x: i64, y: i64 },
 }
 
-use bevy_renet::renet::{
-  RenetConnectionConfig,
-  ChannelConfig,
-  ReliableChannelConfig,
-  UnreliableChannelConfig,
-  BlockChannelConfig
-};
-
-pub fn renet_connection_config() -> RenetConnectionConfig {
-  RenetConnectionConfig {
-    max_packet_size: 128 * 1024,
-    channels_config: vec![
-      ChannelConfig::Reliable(ReliableChannelConfig {
-        packet_budget: u64::MAX,
-        ..Default::default()
-      }),
-      ChannelConfig::Unreliable(UnreliableChannelConfig {
-        max_message_size: u64::MAX,
-        packet_budget: u64::MAX,
-        ..Default::default()
-      }),
-      ChannelConfig::Block(BlockChannelConfig::default()),
-    ],
-    ..Default::default()
-  }
+#[deprecated = "Use shared::consts::CONNECTION_CONFIG() instead"]
+#[allow(deprecated)]
+pub fn renet_connection_config() -> bevy_renet::renet::RenetConnectionConfig {
+  crate::consts::CONNECTION_CONFIG()
 }

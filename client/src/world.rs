@@ -11,11 +11,15 @@ use crate::{
   networking::RequestChunk,
   player::{ChunkLocation, MainPlayer},
   assets::{AssetLoaderState, BlockTextureAtlas, BlockTextureIndexMap},
-  chunk::{Chunk, ChunkPosition},
+  
   mesh_builder::MeshBuilder
 };
 use shared::{
-  types::{Block, CubeFace as Face},
+  types::{
+    CubeFace,
+    block::Block, 
+    chunk::{ChunkDataComponent, ChunkPosition, Chunk},
+  },
   consts::{CHUNK_HEIGHT, CHUNK_SIZE, DEFAULT_CLIENT_VIEW_DIST},
   blocks::{BlockTypeManager, BlockMetadata}
 };
@@ -78,7 +82,7 @@ fn update_loaded_chunks_around_player (
 
 fn mesh_gen_system(
   mut commands: Commands,
-  chunks: Query<(Entity, &Chunk, &ChunkPosition), Without<MeshStage>>,
+  chunks: Query<(Entity, &ChunkDataComponent, &ChunkPosition), Without<MeshStage>>,
   pool: Res<AsyncComputeTaskPool>,
   ref atlas: Res<BlockTextureAtlas>,
   block_types: Res<BlockTypeManager>,
@@ -132,7 +136,7 @@ fn mesh_gen_system(
               [0.0, 0.0],
             ];*/
 
-            let face_uv = |face: Face| {
+            let face_uv = |face: CubeFace| {
               //what
               //the
               //fuck
@@ -152,12 +156,12 @@ fn mesh_gen_system(
             
             match &metadatas[block.block_type as usize].shape {
               BlockShape::Cube => {
-                builder.add_face_if(query(0, 1,0), Face::Top,    coord, face_uv(Face::Top));
-                builder.add_face_if(query(0,0,-1), Face::Front,  coord, face_uv(Face::Front));
-                builder.add_face_if(query(-1,0,0), Face::Left,   coord, face_uv(Face::Left));
-                builder.add_face_if(query(1, 0,0), Face::Right,  coord, face_uv(Face::Right));
-                builder.add_face_if(query(0, 0,1), Face::Back,   coord, face_uv(Face::Back));
-                builder.add_face_if(query(0,-1,0), Face::Bottom, coord, face_uv(Face::Bottom));
+                builder.add_face_if(query(0, 1,0), CubeFace::Top,    coord, face_uv(CubeFace::Top));
+                builder.add_face_if(query(0,0,-1), CubeFace::Front,  coord, face_uv(CubeFace::Front));
+                builder.add_face_if(query(-1,0,0), CubeFace::Left,   coord, face_uv(CubeFace::Left));
+                builder.add_face_if(query(1, 0,0), CubeFace::Right,  coord, face_uv(CubeFace::Right));
+                builder.add_face_if(query(0, 0,1), CubeFace::Back,   coord, face_uv(CubeFace::Back));
+                builder.add_face_if(query(0,-1,0), CubeFace::Bottom, coord, face_uv(CubeFace::Bottom));
               },
               _ => {
                 error!("UNIMPLEMENTED SHAPE");

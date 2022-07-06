@@ -5,7 +5,7 @@ use bevy_renet::{
     RenetServer, 
     ServerConfig,
     ServerEvent, 
-    NETCODE_KEY_BYTES
+    NETCODE_KEY_BYTES,
   },
   RenetServerPlugin
 };
@@ -32,17 +32,13 @@ use shared::{
     check_username,
   },
   types::{
-    AuthUserData,
-    PlayerInitData,
-    ChatMessage,
-    Lobby,
-    Username
+    chunk::{Chunk, ChunkData, ChunkPosition, ChunkMap, ChunkDataComponent},
+    net::{AuthUserData, Lobby},
+    player::{PlayerInitData, Username},
+    chat::ChatMessage,
   },
 };
-use crate::{
-  worldgen::generate as generate_chunk,
-  Args,
-};
+use crate::{Args, worldgen::generate as generate_chunk};
 
 pub struct PrivateKey(pub [u8; NETCODE_KEY_BYTES]);
 
@@ -120,7 +116,7 @@ fn server_update_system(
         info!("Player {} with username {} connected.", id, &username);
 
         //Spawn Player Entity
-        let plr_transform = Transform::from_xyz(0., 60., 0.);
+        let plr_transform = Transform::from_xyz(0., 140., 0.);
         let player_entity = commands.spawn()
           .insert_bundle(TransformBundle::from_transform(plr_transform))
           .insert(Player { id: *id })
@@ -202,8 +198,8 @@ fn server_update_system(
 
 #[derive(Component)]
 struct ChunkGenTask{
-  pub task: Task<Vec<u8>>,
-  pub client_id: u64,
+  pub task: Task<(ChunkData, Vec<u8>)>,
+  pub subscribers: Vec<u64>,
 }
 
 fn process_chunk_gen_tasks(
@@ -212,10 +208,12 @@ fn process_chunk_gen_tasks(
   mut tasks: Query<(Entity, &mut ChunkGenTask)>
 ) {
   for (entity, mut task) in tasks.iter_mut() {
-    if let Some(message) = future::block_on(future::poll_once(&mut task.task)) {
+    if let Some((chunk, message)) = future::block_on(future::poll_once(&mut task.task)) {
       info!("Chunk size: {} bytes", message.len());
-      server.send_message(task.client_id, CHANNEL_UNRELIABLE, message);
-      commands.entity(entity).despawn();
+      for client_id in task.subscribers.iter() {
+        server.send_message(*client_id, CHANNEL_UNRELIABLE, message.clone());
+      }
+      commands.entity(entity).remove::<ChunkGenTask>().insert(ChunkDataComponent(chunk));
     }; 
   }
 }
@@ -247,6 +245,7 @@ fn handle_incoming_stuff(
   blocks: Res<BlockTypeManager>,
   lobby: Res<Lobby>,
   mut players: Query<(&mut Transform, &Username), With<Player>>,
+  mut chunk_map: ResMut<ChunkMap>,
 ) {
   for client_id in server.clients_id() {
     for channel_id in 0..=2 {
@@ -258,12 +257,21 @@ fn handle_incoming_stuff(
               info!("Chunk request {} {}", x, y);
               let blocks_uwu = blocks.clone();
               let task = pool.spawn(async move {
-                bincode::serialize(&ServerToClientMessages::ChunkData { 
-                  data: generate_chunk(x, y, &blocks_uwu).into(), 
+                let chunk = generate_chunk(x, y, &blocks_uwu);
+                let cumpressed = bincode::serialize(&ServerToClientMessages::ChunkData { 
+                  data: chunk.clone().into(), 
                   position: (x, y)
-                }).unwrap()
+                }).unwrap();
+                (chunk, cumpressed)
               });
-              commands.spawn().insert(ChunkGenTask{ task, client_id });
+              let entity = commands.spawn()
+                .insert(Chunk)
+                .insert(ChunkPosition(x, y))
+                .insert(ChunkGenTask{
+                  task,
+                  subscribers: vec![client_id]
+                }).id();
+              chunk_map.insert(ChunkPosition(x, y), entity);
             },
 
             ClientToServerMessages::ChatMessage { message } => {
@@ -304,9 +312,10 @@ fn handle_incoming_stuff(
 pub struct ServerPlugin;
 impl Plugin for ServerPlugin {
   fn build(&self, app: &mut App) {
-    //Generate private key
+    //Generate private key 
     app.add_event::<SendSysMessageEvt>();
     app.init_resource::<Lobby>();
+    app.init_resource::<ChunkMap>();
     app.insert_resource(PrivateKey(StdRng::from_entropy().gen()));
     app.add_plugin(RenetServerPlugin);
     app.add_startup_system(create_renet_server);

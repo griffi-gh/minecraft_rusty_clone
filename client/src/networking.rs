@@ -21,7 +21,9 @@ use std::{
 };
 use shared::{
   types::{
-    Lobby, Username, PlayerInitData
+    net::Lobby, 
+    player::{Username, PlayerInitData},
+    chunk::{ChunkPosition, ChunkDataComponent},
   },
   messages::{
     ClientToServerMessages, 
@@ -36,8 +38,7 @@ use crate::{
   GameState,
   chat::ChatMessages,
   player::{ChunkLocation, NetPlayer, Player},
-  chunk::{Chunk, ChunkPosition},
-  player::MainPlayer
+  player::MainPlayer,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -59,7 +60,7 @@ pub struct AddNetPlayer{
 }
 
 #[derive(Component)]
-pub struct DecompressTask(pub Task<Chunk>);
+pub struct DecompressTask(pub Task<ChunkDataComponent>);
 
 fn run_if_client_conected(client: Option<Res<RenetClient>>) -> bool {
   if let Some(client) = client {
@@ -196,7 +197,7 @@ fn handle_incoming_stuff(
             let position = ChunkPosition(position.0, position.1);
             info!("Chunk {:?} - Received", position);
             let task = pool.spawn(async move {
-              Chunk((data).into())
+              ChunkDataComponent((data).into())
             });
             commands.spawn()
               .insert(position)

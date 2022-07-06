@@ -7,7 +7,7 @@ use bevy_egui::{
 };
 use std::time::SystemTime;
 use time::{ self, OffsetDateTime };
-use shared::types::ChatMessage;
+use shared::types::chat::ChatMessage;
 use crate::{
   GameState,
   networking::RequestNetChatSend
