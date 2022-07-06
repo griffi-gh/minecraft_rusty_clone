@@ -286,7 +286,7 @@ fn handle_incoming_stuff(
                 if let Some(data) = query_result.0 {
                   //If the requested chunk is ready, start a compression task
                   //That sends the chunk data after completion
-                  println!("^ ChunkCompressTask");
+                  info!("^ ChunkCompressTask");
                   let data = data.clone();
                   commands.spawn().insert(ChunkCompressTask {
                     client_id,
@@ -300,7 +300,7 @@ fn handle_incoming_stuff(
                 } else if let Some(mut task) = query_result.1 {
                   //If the requested chunk is not generated yet, subscribe client to it
                   //(...Only if it's not already subscribed)
-                  println!("^ GenTaskSub");
+                  info!("^ GenTaskSub");
                   if !task.subscribers.contains(&client_id) {
                     task.subscribers.push(client_id);
                   }
@@ -309,7 +309,7 @@ fn handle_incoming_stuff(
                 }
               } else {
                 //Spawn chunk gen task
-                println!("^ NewGenTask");
+                info!("^ NewGenTask");
                 let blocks_uwu = blocks.clone();
                 let task = pool.spawn(async move {
                   let chunk = generate_chunk(x, y, &blocks_uwu);
