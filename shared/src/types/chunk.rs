@@ -32,6 +32,9 @@ impl ChunkMap {
   #[inline] pub fn remove(&mut self, pos: ChunkPosition) {
     self.0.remove(&(pos.0, pos.1));
   }
+  #[inline] pub fn exists(&self, pos: ChunkPosition) -> bool {
+    self.0.contains_key(&(pos.0, pos.1))
+  }
 }
 
 #[serde_as]

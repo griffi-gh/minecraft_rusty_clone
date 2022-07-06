@@ -27,8 +27,7 @@ pub fn check_username(name: &str) -> Result<(), &'static str> {
   //Check banned regex
   for (regex, reason) in BANNED_NAMES_PARSED.iter() {
     if regex.is_match(name) {
-      //TODO return a better reason
-      return Err(reason);
+      return Err(*reason);
     }
   }
   Ok(())

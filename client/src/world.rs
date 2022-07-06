@@ -229,12 +229,6 @@ fn despawn_world (
   }
 }
 
-/*struct WorldMap {
-  //TODO WorldMap struct
-  map: HashMap<ChunkPosition, String>
-}*/
-
-
 pub struct WorldPlugin;
 impl Plugin for WorldPlugin {
   fn build(&self, app: &mut App) {

@@ -198,6 +198,12 @@ fn server_update_system(
 }
 
 #[derive(Component)]
+struct ChunkCompressTask{
+  pub task: Task<Vec<u8>>,
+  pub client_id: u64,
+}
+
+#[derive(Component)]
 struct ChunkGenTask{
   pub task: Task<(ChunkData, Vec<u8>)>,
   pub subscribers: Vec<u64>,
@@ -210,11 +216,29 @@ fn process_chunk_gen_tasks(
 ) {
   for (entity, mut task) in tasks.iter_mut() {
     if let Some((chunk, message)) = future::block_on(future::poll_once(&mut task.task)) {
-      info!("Chunk size: {} bytes", message.len());
-      for client_id in task.subscribers.iter() {
-        server.send_message(*client_id, CHANNEL_UNRELIABLE, message.clone());
+      if task.subscribers.len() == 1 {
+        //Send without cloning
+        server.send_message(task.subscribers[0], CHANNEL_UNRELIABLE, message);
+      } else {
+        //If multiple clients are subscribed, clone message
+        for client_id in task.subscribers.iter() {
+          server.send_message(*client_id, CHANNEL_UNRELIABLE, message.clone());
+        }
       }
       commands.entity(entity).remove::<ChunkGenTask>().insert(ChunkDataComponent(chunk));
+    }; 
+  }
+}
+
+fn process_chunk_compress_tasks(
+  mut commands: Commands,
+  mut server: ResMut<RenetServer>,
+  mut tasks: Query<(Entity, &mut ChunkCompressTask)>
+) {
+  for (entity, mut task) in tasks.iter_mut() {
+    if let Some(message) = future::block_on(future::poll_once(&mut task.task)) {
+      server.send_message(task.client_id, CHANNEL_UNRELIABLE, message);
+      commands.entity(entity).despawn();
     }; 
   }
 }
@@ -247,32 +271,64 @@ fn handle_incoming_stuff(
   lobby: Res<Lobby>,
   mut players: Query<(&mut Transform, &Username), With<Player>>,
   mut chunk_map: ResMut<ChunkMap>,
+  mut chunk_query: Query<(Option<&ChunkDataComponent>, Option<&mut ChunkGenTask>), With<Chunk>>
 ) {
   for client_id in server.clients_id() {
     for channel_id in 0..=2 {
       while let Some(message) = server.receive_message(client_id, channel_id) {
         if let Ok(message) = bincode::deserialize(&message) {
           match message {
-
             ClientToServerMessages::ChunkRequest {x, y} => {
               info!("Chunk request {} {}", x, y);
-              let blocks_uwu = blocks.clone();
-              let task = pool.spawn(async move {
-                let chunk = generate_chunk(x, y, &blocks_uwu);
-                let cumpressed = bincode::serialize(&ServerToClientMessages::ChunkData { 
-                  data: chunk.clone().into(), 
-                  position: (x, y)
-                }).unwrap();
-                (chunk, cumpressed)
-              });
-              let entity = commands.spawn()
-                .insert(Chunk)
-                .insert(ChunkPosition(x, y))
-                .insert(ChunkGenTask{
-                  task,
-                  subscribers: vec![client_id]
-                }).id();
-              chunk_map.insert(ChunkPosition(x, y), entity);
+              let pos = ChunkPosition(x, y);
+              if let Some(chunk) = chunk_map.get(pos) {
+                let query_result = chunk_query.get_mut(chunk).unwrap();
+                if let Some(data) = query_result.0 {
+                  //If the requested chunk is ready, start a compression task
+                  //That sends the chunk data after completion
+                  println!("^ ChunkCompressTask");
+                  let data = data.clone();
+                  commands.spawn().insert(ChunkCompressTask {
+                    client_id,
+                    task: pool.spawn(async move {
+                      bincode::serialize(&ServerToClientMessages::ChunkData { 
+                        data: data.0.into(), 
+                        position: (x, y)
+                      }).unwrap()
+                    })
+                  });
+                } else if let Some(mut task) = query_result.1 {
+                  //If the requested chunk is not generated yet, subscribe client to it
+                  //(...Only if it's not already subscribed)
+                  println!("^ GenTaskSub");
+                  if !task.subscribers.contains(&client_id) {
+                    task.subscribers.push(client_id);
+                  }
+                } else {
+                  panic!("Chunk is in a weird state")
+                }
+              } else {
+                //Spawn chunk gen task
+                println!("^ NewGenTask");
+                let blocks_uwu = blocks.clone();
+                let task = pool.spawn(async move {
+                  let chunk = generate_chunk(x, y, &blocks_uwu);
+                  let cumpressed = bincode::serialize(&ServerToClientMessages::ChunkData { 
+                    data: chunk.clone().into(), 
+                    position: (x, y)
+                  }).unwrap();
+                  (chunk, cumpressed)
+                });
+                //Spawn Chunk entity
+                let entity = commands.spawn()
+                  .insert(Chunk)
+                  .insert(ChunkPosition(x, y))
+                  .insert(ChunkGenTask{
+                    task,
+                    subscribers: vec![client_id]
+                  }).id();
+                chunk_map.insert(ChunkPosition(x, y), entity);
+              }
             },
 
             ClientToServerMessages::ChatMessage { message } => {
@@ -324,6 +380,7 @@ impl Plugin for ServerPlugin {
     app.add_system(server_update_system);
     app.add_system(handle_incoming_stuff);
     app.add_system(process_chunk_gen_tasks);
+    app.add_system(process_chunk_compress_tasks);
     app.add_system(send_system_messages);
   }
 }
