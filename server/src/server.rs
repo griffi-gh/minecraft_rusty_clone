@@ -197,11 +197,11 @@ fn server_update_system(
   }
 }
 
-#[derive(Component)]
-struct ChunkCompressTask{
-  pub task: Task<Vec<u8>>,
-  pub client_id: u64,
-}
+// #[derive(Component)]
+// struct ChunkCompressTask{
+//   pub task: Task<Vec<u8>>,
+//   pub client_id: u64,
+// }
 
 #[derive(Component)]
 struct ChunkGenTask{
@@ -230,18 +230,19 @@ fn process_chunk_gen_tasks(
   }
 }
 
-fn process_chunk_compress_tasks(
-  mut commands: Commands,
-  mut server: ResMut<RenetServer>,
-  mut tasks: Query<(Entity, &mut ChunkCompressTask)>
-) {
-  for (entity, mut task) in tasks.iter_mut() {
-    if let Some(message) = future::block_on(future::poll_once(&mut task.task)) {
-      server.send_message(task.client_id, CHANNEL_UNRELIABLE, message);
-      commands.entity(entity).remove::<ChunkCompressTask>().despawn();
-    }; 
-  }
-}
+// fn process_chunk_compress_tasks(
+//   mut commands: Commands,
+//   mut server: ResMut<RenetServer>,
+//   mut tasks: Query<(Entity, &mut ChunkCompressTask)>
+// ) {
+//   for (entity, mut task) in tasks.iter_mut() {
+//     if let Some(message) = future::block_on(future::poll_once(&mut task.task)) {
+//       info!("MessageFUck");
+//       server.send_message(task.client_id, CHANNEL_UNRELIABLE, message);
+//       commands.entity(entity).remove::<ChunkCompressTask>().despawn();
+//     }; 
+//   }
+// }
 
 fn send_system_messages(
   mut events: EventReader<SendSysMessageEvt>,
@@ -284,19 +285,35 @@ fn handle_incoming_stuff(
               if let Some(chunk) = chunk_map.get(pos) {
                 let query_result = chunk_query.get_mut(chunk).unwrap();
                 if let Some(data) = query_result.0 {
+                  info!("^ ChunkCompress");
+                  //TODO fix ChunkCompressTask
+                  //Temporarily it's single threaded.
+                  //Another workaround: add std::thread::sleep
+                  //But it's not worth it since it's pretty fast anyway
+                  
+                  let data: ChunkData = data.0.clone();
+                  server.send_message(
+                    client_id,
+                    CHANNEL_UNRELIABLE,
+                  bincode::serialize(&ServerToClientMessages::ChunkData { 
+                      data: data.into(), 
+                      position: (x, y)
+                    }).unwrap()
+                  );
+
                   //If the requested chunk is ready, start a compression task
                   //That sends the chunk data after completion
-                  info!("^ ChunkCompressTask");
-                  let data: ChunkData = data.0.clone();
+                  /*let data: ChunkData = data.0.clone();
                   commands.spawn().insert(ChunkCompressTask {
                     client_id,
                     task: pool.spawn(async move {
+                      std::thread::sleep(std::time::Duration::from_millis(100));
                       bincode::serialize(&ServerToClientMessages::ChunkData { 
                         data: data.into(), 
                         position: (x, y)
                       }).unwrap()
                     })
-                  });
+                  });*/
                 } else if let Some(mut task) = query_result.1 {
                   //If the requested chunk is not generated yet, subscribe client to it
                   //(...Only if it's not already subscribed)
@@ -380,7 +397,7 @@ impl Plugin for ServerPlugin {
     app.add_system(server_update_system);
     app.add_system(handle_incoming_stuff);
     app.add_system(process_chunk_gen_tasks);
-    app.add_system(process_chunk_compress_tasks);
+    // app.add_system(process_chunk_compress_tasks);
     app.add_system(send_system_messages);
   }
 }
