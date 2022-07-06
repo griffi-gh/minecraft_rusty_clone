@@ -14,10 +14,9 @@ use bevy_egui::EguiContext;
 use futures_lite::future;
 use serde_json::Value as JsonValue;
 use { bincode, reqwest, base64 };
-use rand::{thread_rng, Rng};
 use std::{
   time::{SystemTime},
-  net::{IpAddr, SocketAddr, UdpSocket},
+  net::{SocketAddr, UdpSocket},
   io::Cursor
 };
 use shared::{
@@ -30,7 +29,7 @@ use shared::{
     renet_connection_config
   },
   consts::{
-    CHANNEL_RELIABLE, CHANNEL_UNRELIABLE, DEFAULT_PORT
+    CHANNEL_RELIABLE, CHANNEL_UNRELIABLE
   },
 };
 use crate::{
@@ -69,19 +68,28 @@ fn run_if_client_conected(client: Option<Res<RenetClient>>) -> bool {
   false
 }
 
-fn create_renet_client(
-  mut commands: Commands
-) {
-  let server_ip: IpAddr = [127,0,0,1].into();
-  let api_url = format!("http://{}:{}", server_ip.to_string(), DEFAULT_PORT);
+#[derive(Clone, Debug)]
+pub struct ConnectionConfig {
+  pub addr: SocketAddr,
+  pub username: String,
+  pub password: Option<String>,
+}
 
-  let username = format!("Guest{}", thread_rng().gen_range(1000..=9999));
+fn create_renet_client(
+  mut commands: Commands,
+  config: Res<ConnectionConfig>,
+) {
+  let api_url = format!("http://{}:{}",config.addr.ip(), config.addr.port());
+  let addr_no_port = SocketAddr::new(config.addr.ip(), 0);
 
   //Get connection data
   let conn_data: JsonValue = {
     let client = reqwest::blocking::Client::new();
     let res = client.get(format!("{}/connect", api_url))
-      .query(&[("username", username.as_str())])
+      .query(&[
+        ("username", config.username.clone().as_str()),
+        ("password", config.password.as_ref().map_or("", |s| s.as_ref())) //TODO don't pass empty password
+      ])
       .send()
       .expect("Failed to get the connection token");
     let res_bytes = &res.bytes().unwrap()[..];
@@ -100,11 +108,10 @@ fn create_renet_client(
       ConnectToken::read(&mut Cursor::new(&token_bytes)).unwrap()
     },
     conn_data["client_id"].as_u64().expect("No Client ID in response"),
-    // conn_data["port"].as_u64().expect("No port in response") as u16,
   );
   
   //Bind socket
-  let socket = UdpSocket::bind(SocketAddr::new(server_ip, 0)).unwrap();
+  let socket = UdpSocket::bind(addr_no_port).unwrap();
 
   //Create config things
   let connection_config = renet_connection_config();

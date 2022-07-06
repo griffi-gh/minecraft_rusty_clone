@@ -6,9 +6,13 @@ use bevy_egui::{
 };
 use reqwest;
 use serde_json::Value as JsonValue;
+use rand::{thread_rng, Rng};
 use std::net::{SocketAddr, IpAddr};
-use shared::utils::{check_username, check_password};
-use crate::GameState;
+use shared::{
+  utils::{check_username, check_password}, 
+  consts::DEFAULT_PORT
+};
+use crate::{GameState, networking::ConnectionConfig};
 
 #[derive(Default, PartialEq)]
 #[non_exhaustive]
@@ -96,27 +100,48 @@ fn main_menu_gui(
 
             ui.add_enabled_ui(form_valid, |ui| {
               if ui.button("Connect").clicked() {
-                let mut proceed = true;
+                let connect_addr = gui_state.server_addr.parse().ok().unwrap_or_else(|| {
+                  SocketAddr::new(
+                    // Should never panic because in this case button *should* be inactive
+                    gui_state.server_addr.parse::<IpAddr>().unwrap(), 
+                    DEFAULT_PORT
+                  )
+                });
+                let mut proceed = false;
                 if gui_state.password.is_none() {
-                  if let Ok(res) = reqwest::blocking::get(format!("http://{}/", gui_state.server_addr)) {
+                  if let Ok(res) = reqwest::blocking::get(format!("http://{}/", &connect_addr)) {
                     if let Ok(json_val) = res.json::<JsonValue>() {
                       let has_pwd = json_val["password_protected"].as_bool().unwrap_or_default();
                       if has_pwd {
                         gui_state.password = Some(String::new());
-                        proceed = false;
+                      } else {
+                        proceed = true;
                       }
-                    } else { proceed = false }
-                  } else { proceed = false }
+                    }
+                  }
+                } else {
+                  proceed = true;
                 }
                 if proceed {
+                  commands.insert_resource(ConnectionConfig {
+                    addr: connect_addr,
+                    username: gui_state.username.clone(),
+                    password: gui_state.password.clone(),
+                  });
                   commands.insert_resource(NextState(GameState::Connecting));
                 }
               }
             });
 
             if ui.button("[DEBUG] Connect to localhost").clicked() {
+              commands.insert_resource(ConnectionConfig {
+                addr: SocketAddr::new([127, 0, 0, 1].into(), DEFAULT_PORT),
+                username: format!("Debug{}", thread_rng().gen_range(1000..=9999)),
+                password: None,
+              });
               commands.insert_resource(NextState(GameState::Connecting));
             }
+
           }
         }
 
