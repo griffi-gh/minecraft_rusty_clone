@@ -108,7 +108,9 @@ fn main_menu_gui(
                   )
                 });
                 let mut proceed = false;
-                if gui_state.password.is_none() {
+                if gui_state.password.is_some() {
+                  proceed = true;
+                } else {
                   if let Ok(res) = reqwest::blocking::get(format!("http://{}/", &connect_addr)) {
                     if let Ok(json_val) = res.json::<JsonValue>() {
                       let has_pwd = json_val["password_protected"].as_bool().unwrap_or_default();
@@ -119,8 +121,6 @@ fn main_menu_gui(
                       }
                     }
                   }
-                } else {
-                  proceed = true;
                 }
                 if proceed {
                   commands.insert_resource(ConnectionConfig {
