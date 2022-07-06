@@ -23,9 +23,10 @@ use std::{
 };
 use shared::{
   blocks::BlockTypeManager,
-  messages::{ServerToClientMessages, ClientToServerMessages, renet_connection_config},
+  messages::{ServerToClientMessages, ClientToServerMessages},
   consts::{ 
-    PROTOCOL_ID, MAX_CLIENTS, CHANNEL_RELIABLE, CHANNEL_UNRELIABLE 
+    PROTOCOL_ID, MAX_CLIENTS, CHANNEL_RELIABLE, CHANNEL_UNRELIABLE,
+    renet_connection_config
   },
   utils::{
     print_on_renet_error_system,

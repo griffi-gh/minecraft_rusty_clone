@@ -46,7 +46,7 @@ fn chunk_distance(pos: &ChunkPosition, loc: &ChunkLocation) -> usize {
 fn update_loaded_chunks_around_player (
   mut commands: Commands,
   mut ev_reqest: EventWriter<RequestChunk>,
-  chunks: Query<(Entity, &ChunkPosition)>,
+  chunks: Query<(Entity, &ChunkPosition), With<Chunk>>,
   player_chunk: Query<&ChunkLocation, (With<MainPlayer>, Changed<ChunkLocation>)>
 ) {
   if player_chunk.is_empty() { 

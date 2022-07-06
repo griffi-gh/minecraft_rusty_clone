@@ -45,9 +45,8 @@ mod static_stuff {
     regexes
   });
 
-  #[allow(non_snake_case)]
   #[inline(always)]
-  pub fn CONNECTION_CONFIG() -> RenetConnectionConfig {
+  pub fn renet_connection_config() -> RenetConnectionConfig {
     RenetConnectionConfig {
       max_packet_size: 128 * 1024,
       channels_config: vec![

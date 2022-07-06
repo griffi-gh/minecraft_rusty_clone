@@ -37,9 +37,3 @@ pub enum ClientToServerMessages {
   ChatMessage { message: String },
   ChunkRequest { x: i64, y: i64 },
 }
-
-#[deprecated = "Use shared::consts::CONNECTION_CONFIG() instead"]
-#[allow(deprecated)]
-pub fn renet_connection_config() -> bevy_renet::renet::RenetConnectionConfig {
-  crate::consts::CONNECTION_CONFIG()
-}

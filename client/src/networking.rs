@@ -23,15 +23,15 @@ use shared::{
   types::{
     net::Lobby, 
     player::{Username, PlayerInitData},
-    chunk::{ChunkPosition, ChunkDataComponent},
+    chunk::{Chunk, ChunkPosition, ChunkDataComponent},
   },
   messages::{
     ClientToServerMessages, 
-    ServerToClientMessages, 
-    renet_connection_config
+    ServerToClientMessages,
   },
   consts::{
-    CHANNEL_RELIABLE, CHANNEL_UNRELIABLE
+    CHANNEL_RELIABLE, CHANNEL_UNRELIABLE,
+    renet_connection_config
   },
 };
 use crate::{
@@ -201,6 +201,7 @@ fn handle_incoming_stuff(
             });
             commands.spawn()
               .insert(position)
+              .insert(Chunk)
               .insert(DecompressTask(task));
           },
 
