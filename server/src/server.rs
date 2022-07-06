@@ -238,7 +238,7 @@ fn process_chunk_compress_tasks(
   for (entity, mut task) in tasks.iter_mut() {
     if let Some(message) = future::block_on(future::poll_once(&mut task.task)) {
       server.send_message(task.client_id, CHANNEL_UNRELIABLE, message);
-      commands.entity(entity).despawn();
+      commands.entity(entity).remove::<ChunkCompressTask>().despawn();
     }; 
   }
 }
@@ -287,12 +287,12 @@ fn handle_incoming_stuff(
                   //If the requested chunk is ready, start a compression task
                   //That sends the chunk data after completion
                   info!("^ ChunkCompressTask");
-                  let data = data.clone();
+                  let data: ChunkData = data.0.clone();
                   commands.spawn().insert(ChunkCompressTask {
                     client_id,
                     task: pool.spawn(async move {
                       bincode::serialize(&ServerToClientMessages::ChunkData { 
-                        data: data.0.into(), 
+                        data: data.into(), 
                         position: (x, y)
                       }).unwrap()
                     })
