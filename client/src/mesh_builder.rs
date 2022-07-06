@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use bevy::render::mesh::{PrimitiveTopology, Indices};
-use shared::types::CubeFace as Face;
+use shared::types::CubeFace;
 
-const FACE_VERTICES: [[[f32; 3]; 4]; 6] = [
+const CUBE_FACE_VERTICES: [[[f32; 3]; 4]; 6] = [
   [[0., 1., 0.], [0., 1., 1.], [1., 1., 0.], [1., 1., 1.]],
   [[0., 0., 0.], [0., 1., 0.], [1., 0., 0.], [1., 1., 0.]],
   [[0., 0., 1.], [0., 1., 1.], [0., 0., 0.], [0., 1., 0.]],
@@ -10,7 +10,7 @@ const FACE_VERTICES: [[[f32; 3]; 4]; 6] = [
   [[1., 0., 1.], [1., 1., 1.], [0., 0., 1.], [0., 1., 1.]],
   [[0., 0., 1.], [0., 0., 0.], [1., 0., 1.], [1., 0., 0.]]
 ];
-pub const FACE_NORMALS: [[f32; 3]; 6] = [
+pub const CUBE_FACE_NORMALS: [[f32; 3]; 6] = [
   [0., 1., 0.],
   [0., 0., -1.],
   [-1., 0., 0.],
@@ -18,7 +18,7 @@ pub const FACE_NORMALS: [[f32; 3]; 6] = [
   [0., 0., 1.],
   [0., -1., 0.]
 ];
-pub const TRIANGLES: [u32; 6] = [0, 1, 2, 2, 1, 3];
+pub const CUBE_INDICES: [u32; 6] = [0, 1, 2, 2, 1, 3];
 
 
 #[derive(Default)]
@@ -30,13 +30,13 @@ pub struct MeshBuilder {
   faces: u32
 }
 impl MeshBuilder {
-  pub fn add_face(&mut self, face: Face, coord: [u8; 3], uvs: [[f32; 2]; 4]) {
+  pub fn add_face(&mut self, face: CubeFace, coord: [u8; 3], uvs: [[f32; 2]; 4]) {
     //Get face index from Face
     let face_index = face as usize;
     
     //Vertices
     self.vertices.extend_from_slice(
-      &FACE_VERTICES[face_index].map(|mut vert| {
+      &CUBE_FACE_VERTICES[face_index].map(|mut vert| {
         vert[0] += coord[0] as f32;
         vert[1] += coord[1] as f32;
         vert[2] += coord[2] as f32;
@@ -46,30 +46,28 @@ impl MeshBuilder {
 
     //Indices
     self.indices.extend_from_slice(
-      &TRIANGLES.map(|x| {
-        x + (4 * self.faces)
+      &CUBE_INDICES.map(|x| {
+        x + self.faces
       })
     );
 
     //Normals
     self.normals.extend(
-      std::iter::repeat(FACE_NORMALS[face_index]).take(4)
+      std::iter::repeat(CUBE_FACE_NORMALS[face_index]).take(4)
     );
 
     //UVs
     self.uvs.extend_from_slice(&uvs);
 
     //Increment face counter
-    self.faces += 1;
+    self.faces += 4;
   }
 
-  pub fn add_face_if(&mut self, condition: bool, face: Face, coord: [u8; 3], uvs: [[f32; 2]; 4]) {
-    if condition {
-      self.add_face(face, coord, uvs)
-    }
+  pub fn add_face_if(&mut self, condition: bool, face: CubeFace, coord: [u8; 3], uvs: [[f32; 2]; 4]) {
+    if condition { self.add_face(face, coord, uvs) }
   }
 
-  pub fn build(self) -> Mesh{
+  pub fn build(self) -> Mesh {
     let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, self.vertices);
     mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, self.normals);
