@@ -9,14 +9,14 @@ pub struct ChatMessage {
   pub is_system: bool,
 }
 impl ChatMessage {
-  pub fn new(message: String, from: String) -> Self {
+  #[inline] pub fn new(message: String, from: String) -> Self {
     ChatMessage {
       message, from,
       timestamp: SystemTime::now(),
       is_system: false
     }
   }
-  pub fn system_message(message: String) -> Self {
+  #[inline] pub fn system_message(message: String) -> Self {
     ChatMessage {
       message,
       from: "[SYSTEM]".into(),
