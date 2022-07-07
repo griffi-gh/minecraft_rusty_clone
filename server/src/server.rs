@@ -218,11 +218,11 @@ fn process_chunk_gen_tasks(
     if let Some((chunk, message)) = future::block_on(future::poll_once(&mut task.task)) {
       if task.subscribers.len() == 1 {
         //Send without cloning
-        server.send_message(task.subscribers[0], CHANNEL_UNRELIABLE, message);
+        server.send_message(task.subscribers[0], CHANNEL_RELIABLE, message);
       } else {
         //If multiple clients are subscribed, clone message
         for client_id in task.subscribers.iter() {
-          server.send_message(*client_id, CHANNEL_UNRELIABLE, message.clone());
+          server.send_message(*client_id, CHANNEL_RELIABLE, message.clone());
         }
       }
       commands.entity(entity).remove::<ChunkGenTask>().insert(ChunkDataComponent(chunk));
@@ -237,7 +237,7 @@ fn process_chunk_compress_tasks(
 ) {
   for (entity, mut task) in tasks.iter_mut() {
     if let Some(message) = future::block_on(future::poll_once(&mut task.task)) {
-      server.send_message(task.client_id, CHANNEL_UNRELIABLE, message);
+      server.send_message(task.client_id, CHANNEL_RELIABLE, message);
       commands.entity(entity).remove::<ChunkCompressTask>().despawn();
     }; 
   }
@@ -291,8 +291,6 @@ fn handle_incoming_stuff(
                   commands.spawn().insert(ChunkCompressTask {
                     client_id,
                     task: pool.spawn(async move {
-                      //TODO figure out why this is required
-                      std::thread::sleep(std::time::Duration::from_millis(10));
                       bincode::serialize(&ServerToClientMessages::ChunkData { 
                         data: data.into(), 
                         position: (x, y)
