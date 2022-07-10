@@ -49,9 +49,27 @@ mod static_stuff {
   pub fn renet_connection_config() -> RenetConnectionConfig {
     RenetConnectionConfig {
       max_packet_size: 128 * 1024,
-      channels_config: vec![
-        ChannelConfig::Reliable(ReliableChannelConfig::default()),
+      send_channels_config: vec![
+        ChannelConfig::Reliable(ReliableChannelConfig {
+          packet_budget: u64::MAX,
+          max_message_size: u64::MAX,
+          ..Default::default()
+        }),
         ChannelConfig::Unreliable(UnreliableChannelConfig {
+          packet_budget: u64::MAX,
+          max_message_size: u64::MAX,
+          ..Default::default()
+        }),
+        ChannelConfig::Block(BlockChannelConfig::default()),
+      ],
+      receive_channels_config: vec![
+        ChannelConfig::Reliable(ReliableChannelConfig {
+          packet_budget: u64::MAX,
+          max_message_size: u64::MAX,
+          ..Default::default()
+        }),
+        ChannelConfig::Unreliable(UnreliableChannelConfig {
+          packet_budget: u64::MAX,
           max_message_size: u64::MAX,
           ..Default::default()
         }),
