@@ -48,7 +48,7 @@ mod static_stuff {
   #[inline(always)]
   pub fn renet_connection_config() -> RenetConnectionConfig {
     RenetConnectionConfig {
-      max_packet_size: 128 * 1024,
+      max_packet_size: 256 * 1024,
       send_channels_config: vec![
         ChannelConfig::Reliable(ReliableChannelConfig {
           packet_budget: u64::MAX,
