@@ -291,6 +291,8 @@ fn handle_incoming_stuff(
                   commands.spawn().insert(ChunkCompressTask {
                     client_id,
                     task: pool.spawn(async move {
+                      //still broken
+                      std::thread::sleep(std::time::Duration::from_millis(50));
                       bincode::serialize(&ServerToClientMessages::ChunkData { 
                         data: data.into(), 
                         position: (x, y)
