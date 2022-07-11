@@ -675,7 +675,7 @@ dependencies = [
 [[package]]
 name = "bevy_renet"
 version = "0.0.3"
-source = "git+https://github.com/lucaspoffo/renet?rev=2339e56#2339e56da202a087a44a07a6d88e5da24d3f12f6"
+source = "git+https://github.com/lucaspoffo/renet?rev=891951a#891951a1f6bc93c277a4f049bde2a1ae814d9c75"
 dependencies = [
  "bevy",
  "renet",
@@ -3361,7 +3361,7 @@ dependencies = [
 [[package]]
 name = "rechannel"
 version = "0.0.4"
-source = "git+https://github.com/lucaspoffo/renet?rev=2339e56#2339e56da202a087a44a07a6d88e5da24d3f12f6"
+source = "git+https://github.com/lucaspoffo/renet?rev=891951a#891951a1f6bc93c277a4f049bde2a1ae814d9c75"
 dependencies = [
  "bincode",
  "bytes",
@@ -3428,7 +3428,7 @@ checksum = "f1382d1f0a252c4bf97dc20d979a2fdd05b024acd7c2ed0f7595d7817666a157"
 [[package]]
 name = "renet"
 version = "0.0.8"
-source = "git+https://github.com/lucaspoffo/renet?rev=2339e56#2339e56da202a087a44a07a6d88e5da24d3f12f6"
+source = "git+https://github.com/lucaspoffo/renet?rev=891951a#891951a1f6bc93c277a4f049bde2a1ae814d9c75"
 dependencies = [
  "log",
  "rechannel",
@@ -3438,7 +3438,7 @@ dependencies = [
 [[package]]
 name = "renet_visualizer"
 version = "0.0.1"
-source = "git+https://github.com/lucaspoffo/renet?rev=2339e56#2339e56da202a087a44a07a6d88e5da24d3f12f6"
+source = "git+https://github.com/lucaspoffo/renet?rev=891951a#891951a1f6bc93c277a4f049bde2a1ae814d9c75"
 dependencies = [
  "egui",
  "renet",
@@ -3447,7 +3447,7 @@ dependencies = [
 [[package]]
 name = "renetcode"
 version = "0.0.4"
-source = "git+https://github.com/lucaspoffo/renet?rev=2339e56#2339e56da202a087a44a07a6d88e5da24d3f12f6"
+source = "git+https://github.com/lucaspoffo/renet?rev=891951a#891951a1f6bc93c277a4f049bde2a1ae814d9c75"
 dependencies = [
  "aead",
  "chacha20poly1305",
@@ -3622,18 +3622,18 @@ checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 
 [[package]]
 name = "serde"
-version = "1.0.138"
+version = "1.0.139"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1578c6245786b9d168c5447eeacfb96856573ca56c9d68fdcf394be134882a47"
+checksum = "0171ebb889e45aa68b44aee0859b3eede84c6f5f5c228e6f140c0b2a0a46cad6"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.138"
+version = "1.0.139"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "023e9b1467aef8a10fb88f25611870ada9800ef7e22afce356bb0d2387b6f27c"
+checksum = "dc1d3230c1de7932af58ad8ffbe1d784bd55efd5a9d84ac24f69c72d83543dfb"
 dependencies = [
  "proc-macro2",
  "quote",
